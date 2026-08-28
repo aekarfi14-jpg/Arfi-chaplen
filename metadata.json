@@ -1,0 +1,6 @@
+{
+  "name": "ARFI CHAPLEN",
+  "description": "A funny Algerian offline charades party game for groups of friends and family.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
