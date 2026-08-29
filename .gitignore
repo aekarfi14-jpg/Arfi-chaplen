@@ -16,3 +16,6 @@
 local.properties
 .env
 debug.keystore
+node_modules
+dist
+bun.lock
