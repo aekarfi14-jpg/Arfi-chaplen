@@ -5,21 +5,28 @@ import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
 import android.media.AudioManager
+import android.media.MediaPlayer
 import android.media.ToneGenerator
+import com.example.R
 import com.example.data.model.AlgerianMusicTrack
 import kotlinx.coroutines.*
 import kotlin.math.*
 import kotlin.random.Random
 
 /**
- * Algerian Sound & Procedural Music Engine for Arfi Chaplen.
- * Provides authentic procedural Algerian music styles (Rap-Raï, Raï Moderne, Chaâbi, Gnawa)
- * and dynamic game sound effects with zero external audio assets.
+ * Algerian Sound & Music Engine for Arfi Chaplen.
+ * Plays bundled local MP3 audio assets for the 4 Algerian music genres:
+ * - RAP_RAI -> sirocco_velocity.mp3
+ * - RAI_ARASSI -> music-victory.mp3 / music_victory.mp3
+ * - CHAABI_ALGEROIS -> arfi_chaplen.mp3
+ * - GNAWA_DIWAN -> copper_coin_carousel.mp3
+ *
+ * Also provides dynamic game sound effects and tone feedback.
  */
 class SoundManager(private val context: Context) {
 
     private val audioScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-    private var musicJob: Job? = null
+    private var mediaPlayer: MediaPlayer? = null
 
     var sfxEnabled: Boolean = true
     var musicEnabled: Boolean = true
@@ -27,6 +34,8 @@ class SoundManager(private val context: Context) {
             field = value
             if (!value) {
                 stopMenuMusic()
+            } else {
+                startMenuMusic(currentTrack)
             }
         }
 
@@ -34,7 +43,7 @@ class SoundManager(private val context: Context) {
         set(value) {
             val changed = field != value
             field = value
-            if (changed && musicEnabled && musicJob?.isActive == true) {
+            if (changed && musicEnabled && mediaPlayer != null) {
                 // Restart with new track
                 startMenuMusic(value)
             }
@@ -149,179 +158,68 @@ class SoundManager(private val context: Context) {
         }
     }
 
-    // --- Algerian Music Procedural Engine ---
+    // --- Algerian Music Playback Engine (Bundled Local MP3 Audio Assets) ---
 
     fun startMenuMusic(track: AlgerianMusicTrack = currentTrack) {
         currentTrack = track
         if (!musicEnabled) return
-        if (musicJob?.isActive == true) {
-            musicJob?.cancel()
-        }
 
-        musicJob = audioScope.launch {
-            when (track) {
-                AlgerianMusicTrack.RAP_RAI -> playRapRaiLoop()
-                AlgerianMusicTrack.RAI_ARASSI -> playRaiArassiLoop()
-                AlgerianMusicTrack.CHAABI_ALGEROIS -> playChaabiLoop()
-                AlgerianMusicTrack.GNAWA_DIWAN -> playGnawaLoop()
+        stopMenuMusic()
+
+        try {
+            val rawResId = when (track) {
+                AlgerianMusicTrack.RAP_RAI -> R.raw.sirocco_velocity
+                AlgerianMusicTrack.RAI_ARASSI -> R.raw.music_victory
+                AlgerianMusicTrack.CHAABI_ALGEROIS -> R.raw.arfi_chaplen
+                AlgerianMusicTrack.GNAWA_DIWAN -> R.raw.copper_coin_carousel
+            }
+
+            mediaPlayer = MediaPlayer.create(context, rawResId)?.apply {
+                isLooping = true
+                setVolume(0.75f, 0.75f)
+                start()
+            }
+        } catch (e: Exception) {
+            // Graceful fallback attempt using assets
+            try {
+                val assetFileName = when (track) {
+                    AlgerianMusicTrack.RAP_RAI -> "music/sirocco_velocity.mp3"
+                    AlgerianMusicTrack.RAI_ARASSI -> "music/music-victory.mp3"
+                    AlgerianMusicTrack.CHAABI_ALGEROIS -> "music/arfi_chaplen.mp3"
+                    AlgerianMusicTrack.GNAWA_DIWAN -> "music/copper_coin_carousel.mp3"
+                }
+                val afd = context.assets.openFd(assetFileName)
+                mediaPlayer = MediaPlayer().apply {
+                    setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                    afd.close()
+                    isLooping = true
+                    setVolume(0.75f, 0.75f)
+                    prepare()
+                    start()
+                }
+            } catch (fallbackEx: Exception) {
+                mediaPlayer = null
             }
         }
     }
 
     fun stopMenuMusic() {
-        musicJob?.cancel()
-        musicJob = null
-    }
-
-    /**
-     * 1. Rap-Raï Loop (808 Trap Bass + Bayati Synth Lead + Hi-hats)
-     */
-    private suspend fun CoroutineScope.playRapRaiLoop() {
-        // D minor / Bayati scale notes: D4, Eb4, F4, G4, A4, Bb4, C5, D5
-        val melodyPatterns = listOf(
-            listOf(293.66, 311.13, 349.23, 392.00, 349.23, 311.13, 293.66, 293.66),
-            listOf(392.00, 440.00, 466.16, 440.00, 392.00, 349.23, 311.13, 293.66),
-            listOf(440.00, 466.16, 523.25, 466.16, 440.00, 392.00, 349.23, 311.13),
-            listOf(293.66, 349.23, 392.00, 311.13, 293.66, 261.63, 293.66, 293.66)
-        )
-        val bassNotes = listOf(146.83, 155.56, 174.61, 146.83) // D3, Eb3, F3, D3
-
-        var beatIndex = 0
-        while (isActive && musicEnabled) {
-            val pattern = melodyPatterns[beatIndex % melodyPatterns.size]
-            val currentBass = bassNotes[beatIndex % bassNotes.size]
-
-            // Play 808 Sub-bass kick
-            playSyntheticTone(currentBass, 140, WaveType.SINE, volume = 0.14f)
-
-            for ((step, note) in pattern.withIndex()) {
-                if (!isActive || !musicEnabled) break
-
-                // Synth lead note with subtle autotune glide feeling
-                val synthType = if (step % 2 == 0) WaveType.SAWTOOTH else WaveType.TRIANGLE
-                playSyntheticTone(note, 90, synthType, volume = 0.08f)
-
-                // Snare / clap on beat 2 and 4 (step 2 and 6)
-                if (step == 2 || step == 6) {
-                    playSyntheticNoise(durationMs = 45, volume = 0.06f)
+        try {
+            mediaPlayer?.let { player ->
+                if (player.isPlaying) {
+                    player.stop()
                 }
-
-                // Hi-hat tick
-                if (step % 2 == 1) {
-                    playSyntheticTone(2400.0, 15, WaveType.SQUARE, volume = 0.03f)
-                }
-
-                delay(120) // ~125 BPM
+                player.reset()
+                player.release()
             }
-            beatIndex++
-            delay(40)
+        } catch (e: Exception) {
+            // Ignore clean up errors
+        } finally {
+            mediaPlayer = null
         }
     }
 
-    /**
-     * 2. Raï Arassi Loop (6/8 galloping Gallal rhythm + Korg Synth Lead)
-     */
-    private suspend fun CoroutineScope.playRaiArassiLoop() {
-        // Vibrant celebratory Raï motifs in G minor / Bayati
-        val raiPhrases = listOf(
-            listOf(392.00, 415.30, 466.16, 523.25, 466.16, 415.30),
-            listOf(523.25, 587.33, 622.25, 587.33, 523.25, 466.16),
-            listOf(466.16, 523.25, 466.16, 415.30, 392.00, 349.23),
-            listOf(392.00, 349.23, 392.00, 415.30, 392.00, 392.00)
-        )
-
-        var phraseIndex = 0
-        while (isActive && musicEnabled) {
-            val phrase = raiPhrases[phraseIndex % raiPhrases.size]
-
-            // 6/8 Gallal Drum rhythm: Dum (0), Tak (2), Tak (3), Dum (4), Tak (5)
-            for (step in 0 until 6) {
-                if (!isActive || !musicEnabled) break
-
-                val note = phrase[step]
-                // Lead Korg synth tone
-                playSyntheticTone(note, 85, WaveType.SAWTOOTH, volume = 0.08f)
-
-                // Gallal / Darbuka accents
-                when (step) {
-                    0, 4 -> playSyntheticTone(110.0, 60, WaveType.SINE, volume = 0.12f) // Dum
-                    2, 3, 5 -> playSyntheticTone(1200.0, 25, WaveType.TRIANGLE, volume = 0.04f) // Tak
-                }
-
-                delay(110) // 6/8 fast cadence (~136 BPM)
-            }
-            phraseIndex++
-            delay(20)
-        }
-    }
-
-    /**
-     * 3. Chaâbi Algérois Loop (Mandole arpeggios + Derbouka / Tar)
-     */
-    private suspend fun CoroutineScope.playChaabiLoop() {
-        // Traditional Algiers Casbah progression (D minor, C, Bb, A)
-        val mandoleChords = listOf(
-            listOf(293.66, 349.23, 440.00, 587.33), // Dm
-            listOf(261.63, 329.63, 392.00, 523.25), // C
-            listOf(233.08, 293.66, 349.23, 466.16), // Bb
-            listOf(220.00, 277.18, 329.63, 440.00)  // A
-        )
-
-        var chordIdx = 0
-        while (isActive && musicEnabled) {
-            val chord = mandoleChords[chordIdx % mandoleChords.size]
-
-            // Bass strum
-            playSyntheticTone(chord[0] / 2.0, 120, WaveType.TRIANGLE, volume = 0.11f)
-
-            for (note in chord) {
-                if (!isActive || !musicEnabled) break
-                // Strummed mandole acoustic string simulation
-                playSyntheticTone(note, 75, WaveType.TRIANGLE, volume = 0.07f)
-                // Subtle derbouka tap
-                playSyntheticTone(800.0, 20, WaveType.SINE, volume = 0.03f)
-                delay(130)
-            }
-
-            // Return strum
-            playSyntheticTone(chord[2], 80, WaveType.TRIANGLE, volume = 0.06f)
-            delay(100)
-
-            chordIdx++
-            delay(30)
-        }
-    }
-
-    /**
-     * 4. Gnawa & Diwan Loop (Guembri bass riff + Qraqeb polyrhythms)
-     */
-    private suspend fun CoroutineScope.playGnawaLoop() {
-        // Pentatonic desert groove in G: G2, Bb2, C3, D3, F3
-        val guembriRiff = listOf(
-            98.00, 98.00, 116.54, 130.81, 146.83, 130.81, 116.54, 98.00,
-            130.81, 146.83, 174.61, 146.83, 130.81, 116.54, 98.00, 98.00
-        )
-
-        var stepIdx = 0
-        while (isActive && musicEnabled) {
-            val bassFreq = guembriRiff[stepIdx % guembriRiff.size]
-
-            // Deep Guembri pluck with resonant body
-            playSyntheticTone(bassFreq, 110, WaveType.SINE, volume = 0.16f)
-
-            // Qraqeb metallic double clack (shik-shik-chak)
-            if (stepIdx % 2 == 0) {
-                playSyntheticTone(1800.0, 20, WaveType.SQUARE, volume = 0.04f)
-            } else {
-                playSyntheticTone(2200.0, 15, WaveType.SQUARE, volume = 0.03f)
-            }
-
-            stepIdx++
-            delay(125) // ~120 BPM
-        }
-    }
-
-    // --- Audio Synthesis Utilities ---
+    // --- Audio Synthesis Utilities for SFX ---
 
     private enum class WaveType { SINE, SQUARE, TRIANGLE, SAWTOOTH }
 
@@ -447,3 +345,4 @@ class SoundManager(private val context: Context) {
         } catch (e: Exception) {}
     }
 }
+
