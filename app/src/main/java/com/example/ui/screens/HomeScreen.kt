@@ -344,7 +344,7 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        CreatorCreditFooter(creatorText = AppStrings.creatorStoryHeader(lang))
+        CreatorCreditFooter()
         Spacer(modifier = Modifier.height(16.dp))
     }
 
