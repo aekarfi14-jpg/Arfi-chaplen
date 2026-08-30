@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,6 +26,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
@@ -217,34 +219,70 @@ fun ActiveTurnScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Correct Guess Button (Primary Large Green - adds 50 or 100 DA and rolls to next word immediately)
-                Button(
-                    onClick = { viewModel.resolveWord(ResolutionType.CORRECT) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(64.dp)
-                        .testTag("btn_correct_guess"),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = DzEmeraldGlow)
+                Text(
+                    text = "من الفريق الذي عرف الكلمة أولاً؟ (+$pointsGain دج)",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = DzGoldLight,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Team circles / action buttons for guessing correctly
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = null,
-                        tint = Color.Black,
-                        modifier = Modifier.size(28.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "✅ جابوها صح! (+$pointsGain دج)",
-                        fontSize = 19.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color.Black
-                    )
+                    uiState.teams.forEach { t ->
+                        val teamColor = Color(t.colorHex)
+                        Button(
+                            onClick = { viewModel.resolveWord(ResolutionType.CORRECT, t.id) },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(66.dp)
+                                .testTag("btn_correct_team_${t.id}"),
+                            shape = RoundedCornerShape(18.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = teamColor.copy(alpha = 0.35f),
+                                contentColor = Color.White
+                            ),
+                            border = BorderStroke(2.dp, teamColor),
+                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Text(t.emoji, fontSize = 15.sp)
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text(
+                                        text = t.name,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Black,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "+$pointsGain دج ✅",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = DzEmeraldGlow
+                                )
+                            }
+                        }
+                    }
                 }
 
-                // Row for Skip (-20 DA) and Bad Performance (-5 DA)
+                // Row for Skip (-20 DA) and Bad Performance (-5 DA) for active team
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -263,7 +301,7 @@ fun ActiveTurnScreen(
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "⏭️ تخطي (-20 دج)",
-                            fontSize = 14.sp,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.Black,
                             color = Color.Black
                         )

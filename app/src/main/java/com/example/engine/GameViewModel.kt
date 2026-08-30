@@ -112,7 +112,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         soundManager.playButtonClick()
         if (screen == GameScreen.ACTIVE_PLAY || screen == GameScreen.PRIVATE_REVEAL) {
             soundManager.stopMenuMusic()
-        } else if (screen == GameScreen.HOME || screen == GameScreen.SETUP_TEAMS || screen == GameScreen.SETUP_CATEGORIES || screen == GameScreen.SETUP_REVIEW) {
+        } else {
             soundManager.startMenuMusic()
         }
         _uiState.update { it.copy(currentScreen = screen) }
@@ -120,14 +120,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     // --- Team & Player Configuration ---
     fun addTeam() {
+        if (_uiState.value.teams.size >= 4) return
         val count = _uiState.value.teams.size + 1
         val colorPool = listOf(
             0xFF8338EC to "🟣",
             0xFFFB5607 to "🟠",
             0xFF3A86FF to "🩵",
-            0xFFFF006E to "🩷",
-            0xFF06D6A0 to "🟢",
-            0xFFFFBE0B to "🟡"
+            0xFFFF006E to "🩷"
         )
         val (color, emoji) = colorPool[(count - 1) % colorPool.size]
         val newTeamId = "team_${UUID.randomUUID().toString().take(6)}"
@@ -467,7 +466,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // --- Word Resolution with Double-Tap Protection ---
-    fun resolveWord(type: ResolutionType) {
+    fun resolveWord(type: ResolutionType, targetTeamId: String? = null) {
         val state = _uiState.value
         if (state.isProcessingAction || !state.isTimerRunning || state.currentWord == null) return
 
@@ -490,8 +489,16 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             ResolutionType.BAD_PERFORMANCE -> soundManager.playBadPerformance()
         }
 
+        // For correct answers, points go to the guessing team (targetTeamId or activeTeam)
+        // For penalties (SKIP / BAD_PERFORMANCE), penalties ALWAYS apply to activeTeam
+        val targetTeamIdResolved = if (type == ResolutionType.CORRECT) {
+            targetTeamId ?: activeTeam.id
+        } else {
+            activeTeam.id
+        }
+
         val turnResult = TurnResult(
-            teamId = activeTeam.id,
+            teamId = targetTeamIdResolved,
             repPlayerId = activeRep?.id ?: "",
             judgePlayerId = activeJudge?.id,
             word = word,
@@ -499,53 +506,78 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             pointsDelta = pointsDelta
         )
 
-        // Update score of team & players
-        val newTeamScore = (activeTeam.score + pointsDelta).coerceAtLeast(0)
-
         val updatedTeams = state.teams.map { team ->
-            if (team.id == activeTeam.id) {
-                team.copy(
-                    score = newTeamScore,
-                    players = team.players.map { player ->
-                        if (player.id == activeRep?.id) {
-                            val newPlayerScore = (player.score + pointsDelta).coerceAtLeast(0)
-                            when (type) {
-                                ResolutionType.CORRECT -> player.copy(
-                                    score = newPlayerScore,
+            when {
+                // Case 1: Team that scored points or received penalty
+                team.id == targetTeamIdResolved && targetTeamIdResolved == activeTeam.id -> {
+                    val newScore = (team.score + pointsDelta).coerceAtLeast(0)
+                    team.copy(
+                        score = newScore,
+                        players = team.players.map { player ->
+                            if (player.id == activeRep?.id) {
+                                val newPlayerScore = (player.score + pointsDelta).coerceAtLeast(0)
+                                when (type) {
+                                    ResolutionType.CORRECT -> player.copy(
+                                        score = newPlayerScore,
+                                        correctGuesses = player.correctGuesses + 1,
+                                        wordsCompleted = player.wordsCompleted + 1
+                                    )
+                                    ResolutionType.SKIP -> player.copy(
+                                        score = newPlayerScore,
+                                        skips = player.skips + 1,
+                                        wordsCompleted = player.wordsCompleted + 1
+                                    )
+                                    ResolutionType.BAD_PERFORMANCE -> player.copy(
+                                        score = newPlayerScore,
+                                        badPerformances = player.badPerformances + 1,
+                                        wordsCompleted = player.wordsCompleted + 1
+                                    )
+                                }
+                            } else player
+                        }
+                    )
+                }
+                // Case 2: Another team guessed correctly (they get the points)
+                team.id == targetTeamIdResolved -> {
+                    val newScore = (team.score + pointsDelta).coerceAtLeast(0)
+                    team.copy(score = newScore)
+                }
+                // Case 3: Active team when another team guessed correctly (rep still credited for successful act)
+                team.id == activeTeam.id && type == ResolutionType.CORRECT -> {
+                    team.copy(
+                        players = team.players.map { player ->
+                            if (player.id == activeRep?.id) {
+                                player.copy(
                                     correctGuesses = player.correctGuesses + 1,
                                     wordsCompleted = player.wordsCompleted + 1
                                 )
-                                ResolutionType.SKIP -> player.copy(
-                                    score = newPlayerScore,
-                                    skips = player.skips + 1,
-                                    wordsCompleted = player.wordsCompleted + 1
-                                )
-                                ResolutionType.BAD_PERFORMANCE -> player.copy(
-                                    score = newPlayerScore,
-                                    badPerformances = player.badPerformances + 1,
-                                    wordsCompleted = player.wordsCompleted + 1
-                                )
-                            }
-                        } else player
-                    }
-                )
-            } else team
+                            } else player
+                        }
+                    )
+                }
+                else -> team
+            }
         }
 
-        // Check if winning score achieved immediately
-        if (newTeamScore >= state.settings.winningScore) {
+        val updatedTurnHistory = state.turnWordHistory + turnResult
+        val updatedMatchHistory = state.matchWordHistory + turnResult
+
+        // Check if winning score achieved immediately by any team
+        val winningCandidate = updatedTeams.find { it.score >= state.settings.winningScore }
+        if (winningCandidate != null) {
             timerJob?.cancel()
-            val winner = updatedTeams.find { it.id == activeTeam.id }
             val matchDuration = (System.currentTimeMillis() - state.matchStartTimeMs) / 1000
             soundManager.playVictory()
+            recordMatchFinish(winningCandidate, updatedTeams, updatedMatchHistory, state.matchStartTimeMs)
+
             _uiState.update {
                 it.copy(
                     teams = updatedTeams,
-                    winningTeam = winner,
+                    winningTeam = winningCandidate,
                     isTimerRunning = false,
                     matchDurationSeconds = matchDuration,
-                    turnWordHistory = it.turnWordHistory + turnResult,
-                    matchWordHistory = it.matchWordHistory + turnResult,
+                    turnWordHistory = updatedTurnHistory,
+                    matchWordHistory = updatedMatchHistory,
                     currentScreen = GameScreen.VICTORY,
                     isProcessingAction = false
                 )
@@ -560,11 +592,40 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             it.copy(
                 teams = updatedTeams,
                 currentWord = nextWord,
-                turnWordHistory = it.turnWordHistory + turnResult,
-                matchWordHistory = it.matchWordHistory + turnResult,
+                turnWordHistory = updatedTurnHistory,
+                matchWordHistory = updatedMatchHistory,
                 isProcessingAction = false
             )
         }
+    }
+
+    private fun recordMatchFinish(
+        winner: Team,
+        teams: List<Team>,
+        wordHistory: List<TurnResult>,
+        startTimeMs: Long
+    ) {
+        val duration = (System.currentTimeMillis() - startTimeMs) / 1000
+        val totalWords = wordHistory.size
+        val correctWords = wordHistory.count { it.type == ResolutionType.CORRECT }
+        val record = com.example.data.model.SavedMatchRecord(
+            id = UUID.randomUUID().toString(),
+            timestamp = System.currentTimeMillis(),
+            winnerTeamName = winner.name,
+            winnerTeamEmoji = winner.emoji,
+            winnerScore = winner.score,
+            teamScores = teams.map { com.example.data.model.TeamScoreRecord(teamName = it.name, emoji = it.emoji, score = it.score) },
+            durationSeconds = duration,
+            totalWordsPlayed = totalWords,
+            correctWordsCount = correctWords
+        )
+        repository.saveMatchRecord(record)
+    }
+
+    fun getSavedMatchHistory(): List<com.example.data.model.SavedMatchRecord> = repository.getMatchHistory()
+
+    fun clearSavedMatchHistory() {
+        repository.clearMatchHistory()
     }
 
     private fun endCurrentTurn() {
@@ -593,6 +654,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         if (winner != null) {
             val matchDuration = (System.currentTimeMillis() - state.matchStartTimeMs) / 1000
             soundManager.playVictory()
+            recordMatchFinish(winner, updatedTeams, state.matchWordHistory, state.matchStartTimeMs)
+
             _uiState.update {
                 it.copy(
                     teams = updatedTeams,

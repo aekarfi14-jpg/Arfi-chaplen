@@ -356,19 +356,18 @@ fun CreatorCreditFooter(modifier: Modifier = Modifier) {
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp),
-        borderColor = Color(0x30FFB703),
+        borderColor = Color(0x40FFB703),
         shape = RoundedCornerShape(18.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(42.dp)
+                    .size(46.dp)
                     .clip(CircleShape)
                     .background(Color(0x33FFB703))
                     .border(1.dp, DzGold, CircleShape),
@@ -376,23 +375,17 @@ fun CreatorCreditFooter(modifier: Modifier = Modifier) {
             ) {
                 Text(
                     text = "🗿",
-                    fontSize = 22.sp
+                    fontSize = 24.sp
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
-            Column {
-                Text(
-                    text = "صنعها يونس الشكور 🗿",
-                    fontWeight = FontWeight.Black,
-                    fontSize = 14.sp,
-                    color = DzGoldLight
-                )
-                Text(
-                    text = "باش ماتبقاش القعدة ميتة ونسخسخوا بالضحك 🇩🇿🔥",
-                    fontSize = 12.sp,
-                    color = TextSecondary
-                )
-            }
+            Text(
+                text = "هذه اللعبة سُكبتْ من دمي الطاهر وعرقي النفيس وفكري الذي لا يُضاهى... يونس الشيكور، الأعظم الذي وُلد ليصنع المستحيل.🗿",
+                fontWeight = FontWeight.Bold,
+                fontSize = 12.sp,
+                color = DzGoldLight,
+                lineHeight = 18.sp
+            )
         }
     }
 }

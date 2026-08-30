@@ -213,6 +213,85 @@ fun StatisticsScreen(
                 }
             }
 
+            // Saved Match History (Offline Storage)
+            val matchHistory = viewModel.getSavedMatchHistory()
+            if (matchHistory.isNotEmpty()) {
+                item {
+                    GlassCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        borderColor = Color(0x35FFB703)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "📜 سجل المباريات السابقة (${matchHistory.size})",
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 16.sp,
+                                    color = DzGoldLight
+                                )
+                                TextButton(
+                                    onClick = { viewModel.clearSavedMatchHistory() }
+                                ) {
+                                    Text("مسح السجل", color = DzRed, fontSize = 12.sp)
+                                }
+                            }
+
+                            matchHistory.take(10).forEach { match ->
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(DarkSurfaceVariant.copy(alpha = 0.7f))
+                                        .padding(10.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "🏆 الفائز: ${match.winnerTeamEmoji} ${match.winnerTeamName}",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 14.sp,
+                                            color = Color.White
+                                        )
+                                        Text(
+                                            text = "${match.winnerScore} دج",
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 14.sp,
+                                            color = DzEmeraldGlow
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                    val teamsSummary = match.teamScores.joinToString(" | ") { "${it.emoji} ${it.teamName}: ${it.score}دج" }
+                                    Text(
+                                        text = teamsSummary,
+                                        fontSize = 12.sp,
+                                        color = TextSecondary
+                                    )
+
+                                    Text(
+                                        text = "⏱️ المدة: ${match.durationSeconds}ث | 📝 كلمات صحيحة: ${match.correctWordsCount}/${match.totalWordsPlayed}",
+                                        fontSize = 11.sp,
+                                        color = TextMuted
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             item {
                 CreatorCreditFooter()
             }

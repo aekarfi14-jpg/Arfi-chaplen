@@ -27,14 +27,16 @@ class SoundManager(private val context: Context) {
 
     private val audioScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     private var mediaPlayer: MediaPlayer? = null
+    private var currentPlayingTrack: AlgerianMusicTrack? = null
 
     var sfxEnabled: Boolean = true
     var musicEnabled: Boolean = true
         set(value) {
+            val changed = field != value
             field = value
             if (!value) {
                 stopMenuMusic()
-            } else {
+            } else if (changed) {
                 startMenuMusic(currentTrack)
             }
         }
@@ -43,9 +45,9 @@ class SoundManager(private val context: Context) {
         set(value) {
             val changed = field != value
             field = value
-            if (changed && musicEnabled && mediaPlayer != null) {
+            if (changed && musicEnabled) {
                 // Restart with new track
-                startMenuMusic(value)
+                startMenuMusic(value, forceRestart = true)
             }
         }
 
@@ -160,9 +162,21 @@ class SoundManager(private val context: Context) {
 
     // --- Algerian Music Playback Engine (Bundled Local MP3 Audio Assets) ---
 
-    fun startMenuMusic(track: AlgerianMusicTrack = currentTrack) {
+    fun startMenuMusic(track: AlgerianMusicTrack = currentTrack, forceRestart: Boolean = false) {
         currentTrack = track
         if (!musicEnabled) return
+
+        // If already playing the requested track and not forcing restart, keep playing uninterrupted!
+        if (!forceRestart && mediaPlayer != null && currentPlayingTrack == track) {
+            try {
+                if (mediaPlayer?.isPlaying == false) {
+                    mediaPlayer?.start()
+                }
+                return
+            } catch (e: Exception) {
+                // Ignore and proceed to re-init
+            }
+        }
 
         stopMenuMusic()
 
@@ -179,6 +193,7 @@ class SoundManager(private val context: Context) {
                 setVolume(0.75f, 0.75f)
                 start()
             }
+            currentPlayingTrack = track
         } catch (e: Exception) {
             // Graceful fallback attempt using assets
             try {
@@ -197,8 +212,10 @@ class SoundManager(private val context: Context) {
                     prepare()
                     start()
                 }
+                currentPlayingTrack = track
             } catch (fallbackEx: Exception) {
                 mediaPlayer = null
+                currentPlayingTrack = null
             }
         }
     }
@@ -216,6 +233,7 @@ class SoundManager(private val context: Context) {
             // Ignore clean up errors
         } finally {
             mediaPlayer = null
+            currentPlayingTrack = null
         }
     }
 

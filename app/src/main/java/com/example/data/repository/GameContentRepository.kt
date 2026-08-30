@@ -7,6 +7,8 @@ import com.example.data.model.CharadeWord
 import com.example.data.model.DefaultWordsData
 import com.example.data.model.Difficulty
 import com.example.data.model.RandomMemeEvent
+import com.example.data.model.SavedMatchRecord
+import com.example.data.model.TeamScoreRecord
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
@@ -183,5 +185,87 @@ class GameContentRepository(private val context: Context) {
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    @Synchronized
+    fun saveMatchRecord(record: SavedMatchRecord) {
+        try {
+            val currentHistory = getMatchHistory().toMutableList()
+            currentHistory.add(0, record)
+            // Keep last 30 matches
+            val trimmed = currentHistory.take(30)
+
+            val array = JSONArray()
+            for (match in trimmed) {
+                val obj = JSONObject()
+                obj.put("id", match.id)
+                obj.put("timestamp", match.timestamp)
+                obj.put("winnerTeamName", match.winnerTeamName)
+                obj.put("winnerTeamEmoji", match.winnerTeamEmoji)
+                obj.put("winnerScore", match.winnerScore)
+                obj.put("durationSeconds", match.durationSeconds)
+                obj.put("totalWordsPlayed", match.totalWordsPlayed)
+                obj.put("correctWordsCount", match.correctWordsCount)
+
+                val teamsArray = JSONArray()
+                for (team in match.teamScores) {
+                    val tObj = JSONObject()
+                    tObj.put("teamName", team.teamName)
+                    tObj.put("emoji", team.emoji)
+                    tObj.put("score", team.score)
+                    teamsArray.put(tObj)
+                }
+                obj.put("teamScores", teamsArray)
+                array.put(obj)
+            }
+            prefs.edit().putString("match_history_json", array.toString()).apply()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    @Synchronized
+    fun getMatchHistory(): List<SavedMatchRecord> {
+        val historyList = mutableListOf<SavedMatchRecord>()
+        val jsonString = prefs.getString("match_history_json", null) ?: return emptyList()
+        try {
+            val array = JSONArray(jsonString)
+            for (i in 0 until array.length()) {
+                val obj = array.getJSONObject(i)
+                val teamsArray = obj.optJSONArray("teamScores") ?: JSONArray()
+                val teamScores = mutableListOf<TeamScoreRecord>()
+                for (j in 0 until teamsArray.length()) {
+                    val tObj = teamsArray.getJSONObject(j)
+                    teamScores.add(
+                        TeamScoreRecord(
+                            teamName = tObj.optString("teamName", ""),
+                            emoji = tObj.optString("emoji", "🔴"),
+                            score = tObj.optInt("score", 0)
+                        )
+                    )
+                }
+                historyList.add(
+                    SavedMatchRecord(
+                        id = obj.optString("id", UUID.randomUUID().toString()),
+                        timestamp = obj.optLong("timestamp", System.currentTimeMillis()),
+                        winnerTeamName = obj.optString("winnerTeamName", "الفائز"),
+                        winnerTeamEmoji = obj.optString("winnerTeamEmoji", "🏆"),
+                        winnerScore = obj.optInt("winnerScore", 0),
+                        teamScores = teamScores,
+                        durationSeconds = obj.optLong("durationSeconds", 0L),
+                        totalWordsPlayed = obj.optInt("totalWordsPlayed", 0),
+                        correctWordsCount = obj.optInt("correctWordsCount", 0)
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return historyList
+    }
+
+    @Synchronized
+    fun clearMatchHistory() {
+        prefs.edit().remove("match_history_json").apply()
     }
 }

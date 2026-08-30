@@ -79,19 +79,31 @@ fun TeamSetupScreen(
                 ) {
                     OutlinedButton(
                         onClick = { viewModel.addTeam() },
+                        enabled = uiState.teams.size < 4,
                         modifier = Modifier
                             .weight(1f)
                             .height(54.dp)
                             .testTag("add_team_btn"),
                         shape = RoundedCornerShape(18.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = DzGold),
-                        border = ButtonDefaults.outlinedButtonBorder.copy(
-                            brush = Brush.horizontalGradient(listOf(DzGold, DzGoldDark))
-                        )
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = DzGold,
+                            disabledContentColor = TextMuted
+                        ),
+                        border = if (uiState.teams.size < 4) {
+                            ButtonDefaults.outlinedButtonBorder.copy(
+                                brush = Brush.horizontalGradient(listOf(DzGold, DzGoldDark))
+                            )
+                        } else {
+                            BorderStroke(1.dp, Color(0x25FFFFFF))
+                        }
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("إضافة فريق", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text(
+                            text = if (uiState.teams.size < 4) "إضافة فريق" else "الحد الأقصى (4)",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
                     }
 
                     Spacer(modifier = Modifier.width(12.dp))

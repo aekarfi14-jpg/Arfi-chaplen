@@ -188,3 +188,22 @@ data class MatchStatistics(
     val winningTeam: Team? = null,
     val teamRankings: List<Team> = emptyList()
 )
+
+data class TeamScoreRecord(
+    val teamName: String,
+    val emoji: String,
+    val score: Int
+)
+
+data class SavedMatchRecord(
+    val id: String,
+    val timestamp: Long,
+    val winnerTeamName: String,
+    val winnerTeamEmoji: String,
+    val winnerScore: Int,
+    val teamScores: List<TeamScoreRecord>,
+    val durationSeconds: Long,
+    val totalWordsPlayed: Int,
+    val correctWordsCount: Int
+)
+
