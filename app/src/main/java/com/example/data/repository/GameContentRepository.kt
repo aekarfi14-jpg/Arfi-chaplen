@@ -2,6 +2,7 @@ package com.example.data.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.example.data.model.AppLanguage
 import com.example.data.model.Category
 import com.example.data.model.CharadeWord
 import com.example.data.model.DefaultWordsData
@@ -32,6 +33,15 @@ class GameContentRepository(private val context: Context) {
 
     init {
         loadCustomWords()
+    }
+
+    fun getSavedLanguage(): AppLanguage {
+        val code = prefs.getString("app_language", "ar") ?: "ar"
+        return AppLanguage.fromCode(code)
+    }
+
+    fun saveLanguage(language: AppLanguage) {
+        prefs.edit().putString("app_language", language.code).apply()
     }
 
     @Synchronized
@@ -101,17 +111,14 @@ class GameContentRepository(private val context: Context) {
         } else {
             enabledCategories
         }
-
         val allPool = getAvailableWords(candidateCategories)
         if (allPool.isEmpty()) {
-            // Fallback default
             return defaultWords.first()
         }
 
         // Filter out used words
         var unusedPool = allPool.filter { it.id !in usedWordIdsInCurrentMatch }
         if (unusedPool.isEmpty()) {
-            // If all words were used in this massive game, clear half to allow reuse safely
             usedWordIdsInCurrentMatch.clear()
             unusedPool = allPool
         }
@@ -136,7 +143,6 @@ class GameContentRepository(private val context: Context) {
         val freshEvents = allEvents.filter { it.id !in recentEventIds }
         val pool = if (freshEvents.isNotEmpty()) freshEvents else allEvents
         val event = pool.random()
-
         recentEventIds.add(event.id)
         if (recentEventIds.size > 5) {
             recentEventIds.removeAt(0)
@@ -192,9 +198,7 @@ class GameContentRepository(private val context: Context) {
         try {
             val currentHistory = getMatchHistory().toMutableList()
             currentHistory.add(0, record)
-            // Keep last 30 matches
             val trimmed = currentHistory.take(30)
-
             val array = JSONArray()
             for (match in trimmed) {
                 val obj = JSONObject()

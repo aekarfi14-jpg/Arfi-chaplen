@@ -31,7 +31,7 @@ data class GameUiState(
     val matchStartTimeMs: Long = 0L,
     val matchDurationSeconds: Long = 0L,
     val winningTeam: Team? = null,
-    val isProcessingAction: Boolean = false, // Double-tap guard
+    val isProcessingAction: Boolean = false,
     val funnyBannerMessage: String = "",
     val customWords: List<CharadeWord> = emptyList(),
     val totalWordsInLibrary: Int = 0,
@@ -59,11 +59,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private var randomEventCheckedForCurrentTurn = false
 
     init {
+        val initialLanguage = repository.getSavedLanguage()
+        val initialSettings = GameSettings(appLanguage = initialLanguage)
+        _uiState.update { it.copy(settings = initialSettings) }
+
         initializeDefaultGameSetup()
-        soundManager.sfxEnabled = _uiState.value.settings.sfxEnabled
-        soundManager.musicEnabled = _uiState.value.settings.musicEnabled
-        soundManager.currentTrack = _uiState.value.settings.selectedMusicTrack
-        soundManager.startMenuMusic(_uiState.value.settings.selectedMusicTrack)
+        soundManager.sfxEnabled = initialSettings.sfxEnabled
+        soundManager.musicEnabled = initialSettings.musicEnabled
+        soundManager.currentTrack = initialSettings.selectedMusicTrack
+        soundManager.startMenuMusic(initialSettings.selectedMusicTrack)
         refreshCustomWordsList()
     }
 
@@ -99,6 +103,20 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun setLanguage(language: AppLanguage) {
+        repository.saveLanguage(language)
+        _uiState.update {
+            it.copy(settings = it.settings.copy(appLanguage = language))
+        }
+        soundManager.playButtonClick()
+    }
+
+    fun toggleLanguage() {
+        val current = _uiState.value.settings.appLanguage
+        val next = if (current == AppLanguage.ARABIC) AppLanguage.ENGLISH else AppLanguage.ARABIC
+        setLanguage(next)
+    }
+
     fun refreshCustomWordsList() {
         _uiState.update {
             it.copy(
@@ -118,66 +136,105 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(currentScreen = screen) }
     }
 
-    // --- Team & Player Configuration ---
-    fun addTeam() {
-        if (_uiState.value.teams.size >= 4) return
-        val count = _uiState.value.teams.size + 1
-        val colorPool = listOf(
-            0xFF8338EC to "🟣",
-            0xFFFB5607 to "🟠",
-            0xFF3A86FF to "🩵",
-            0xFFFF006E to "🩷"
-        )
-        val (color, emoji) = colorPool[(count - 1) % colorPool.size]
-        val newTeamId = "team_${UUID.randomUUID().toString().take(6)}"
-        val defaultNewPlayer = Player(UUID.randomUUID().toString(), "لاعب 1", newTeamId)
-        val newTeam = Team(
-            id = newTeamId,
-            name = "الفريق $count",
-            colorHex = color,
-            emoji = emoji,
-            score = 0,
-            players = listOf(defaultNewPlayer),
-            currentRepIndex = 0,
-            currentJudgeIndex = 0
-        )
-        _uiState.update { it.copy(teams = it.teams + newTeam) }
-        soundManager.playButtonClick()
+    fun updateSettings(newSettings: GameSettings) {
+        soundManager.sfxEnabled = newSettings.sfxEnabled
+        soundManager.musicEnabled = newSettings.musicEnabled
+        if (newSettings.selectedMusicTrack != _uiState.value.settings.selectedMusicTrack) {
+            soundManager.currentTrack = newSettings.selectedMusicTrack
+            soundManager.startMenuMusic(newSettings.selectedMusicTrack)
+        }
+        _uiState.update { it.copy(settings = newSettings) }
     }
 
-    fun removeTeam(teamId: String) {
-        if (_uiState.value.teams.size <= 1) return
-        _uiState.update { it.copy(teams = it.teams.filter { team -> team.id != teamId }) }
+    fun selectMusicTrack(track: AlgerianMusicTrack) {
+        soundManager.currentTrack = track
+        soundManager.startMenuMusic(track)
+        _uiState.update {
+            it.copy(settings = it.settings.copy(selectedMusicTrack = track, musicEnabled = true))
+        }
+    }
+
+    fun toggleCategory(category: Category) {
+        val currentSet = _uiState.value.settings.enabledCategories.toMutableSet()
+        if (currentSet.contains(category)) {
+            if (currentSet.size > 1) {
+                currentSet.remove(category)
+            }
+        } else {
+            currentSet.add(category)
+        }
         soundManager.playButtonClick()
+        _uiState.update {
+            it.copy(settings = it.settings.copy(enabledCategories = currentSet))
+        }
+    }
+
+    fun setTeamCount(count: Int) {
+        val currentTeams = _uiState.value.teams
+        val newTeams = when (count) {
+            2 -> currentTeams.take(2)
+            3 -> {
+                if (currentTeams.size >= 3) currentTeams.take(3)
+                else currentTeams + Team("team_green", "الفريق الأخضر", 0xFF2A9D8F, "🟢", 0, listOf(Player(UUID.randomUUID().toString(), "سهيلة", "team_green"), Player(UUID.randomUUID().toString(), "أسماء", "team_green")), 0, 1)
+            }
+            4 -> {
+                val fullList = mutableListOf<Team>()
+                fullList.addAll(currentTeams)
+                if (fullList.none { it.id == "team_green" }) {
+                    fullList.add(Team("team_green", "الفريق الأخضر", 0xFF2A9D8F, "🟢", 0, listOf(Player(UUID.randomUUID().toString(), "سهيلة", "team_green"), Player(UUID.randomUUID().toString(), "أسماء", "team_green")), 0, 1))
+                }
+                if (fullList.none { it.id == "team_yellow" }) {
+                    fullList.add(Team("team_yellow", "الفريق الأصفر", 0xFFE76F51, "🟡", 0, listOf(Player(UUID.randomUUID().toString(), "ياسر", "team_yellow"), Player(UUID.randomUUID().toString(), "صالح", "team_yellow")), 0, 1))
+                }
+                fullList.take(4)
+            }
+            else -> currentTeams
+        }
+        soundManager.playButtonClick()
+        _uiState.update { it.copy(teams = newTeams) }
     }
 
     fun renameTeam(teamId: String, newName: String) {
+        if (newName.isBlank()) return
         _uiState.update { state ->
             state.copy(
-                teams = state.teams.map { team ->
-                    if (team.id == teamId) team.copy(name = newName.ifBlank { team.name }) else team
+                teams = state.teams.map {
+                    if (it.id == teamId) it.copy(name = newName.trim()) else it
                 }
             )
         }
     }
 
-    fun addPlayerToTeam(teamId: String, playerName: String = "") {
-        val state = _uiState.value
-        val team = state.teams.find { it.id == teamId } ?: return
-        val count = team.players.size + 1
-        val name = if (playerName.isNotBlank()) playerName else "لاعب $count"
-        val newPlayer = Player(UUID.randomUUID().toString(), name, teamId)
-
-        _uiState.update { s ->
-            s.copy(
-                teams = s.teams.map { t ->
-                    if (t.id == teamId) {
-                        val updatedPlayers = t.players + newPlayer
-                        t.copy(
-                            players = updatedPlayers,
-                            currentJudgeIndex = if (updatedPlayers.size > 1 && t.currentJudgeIndex == 0) 1 else t.currentJudgeIndex
+    fun renamePlayer(teamId: String, playerId: String, newName: String) {
+        if (newName.isBlank()) return
+        _uiState.update { state ->
+            state.copy(
+                teams = state.teams.map { team ->
+                    if (team.id == teamId) {
+                        team.copy(
+                            players = team.players.map { player ->
+                                if (player.id == playerId) player.copy(name = newName.trim()) else player
+                            }
                         )
-                    } else t
+                    } else team
+                }
+            )
+        }
+    }
+
+    fun addPlayerToTeam(teamId: String, playerName: String) {
+        if (playerName.isBlank()) return
+        _uiState.update { state ->
+            state.copy(
+                teams = state.teams.map { team ->
+                    if (team.id == teamId) {
+                        val newPlayer = Player(
+                            id = UUID.randomUUID().toString(),
+                            name = playerName.trim(),
+                            teamId = teamId
+                        )
+                        team.copy(players = team.players + newPlayer)
+                    } else team
                 }
             )
         }
@@ -188,223 +245,94 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { state ->
             state.copy(
                 teams = state.teams.map { team ->
-                    if (team.id == teamId) {
-                        val updated = team.players.filter { it.id != playerId }
-                        team.copy(
-                            players = updated,
-                            currentRepIndex = if (updated.isNotEmpty()) team.currentRepIndex % updated.size else 0,
-                            currentJudgeIndex = if (updated.size > 1) (team.currentRepIndex + 1) % updated.size else 0
-                        )
-                    } else team
-                }
-            )
-        }
-        soundManager.playButtonClick()
-    }
-
-    fun renamePlayer(teamId: String, playerId: String, newName: String) {
-        _uiState.update { state ->
-            state.copy(
-                teams = state.teams.map { team ->
-                    if (team.id == teamId) {
-                        team.copy(
-                            players = team.players.map { player ->
-                                if (player.id == playerId) player.copy(name = newName.ifBlank { player.name }) else player
-                            }
-                        )
+                    if (team.id == teamId && team.players.size > 1) {
+                        team.copy(players = team.players.filter { it.id != playerId })
                     } else team
                 }
             )
         }
     }
 
-    // --- Settings Updates ---
-    fun updateSettings(newSettings: GameSettings) {
-        soundManager.sfxEnabled = newSettings.sfxEnabled
-        soundManager.musicEnabled = newSettings.musicEnabled
-        soundManager.currentTrack = newSettings.selectedMusicTrack
-        if (newSettings.musicEnabled && _uiState.value.currentScreen != GameScreen.ACTIVE_PLAY) {
-            soundManager.startMenuMusic(newSettings.selectedMusicTrack)
-        } else {
-            soundManager.stopMenuMusic()
-        }
-        _uiState.update { it.copy(settings = newSettings) }
-    }
-
-    fun selectMusicTrack(track: AlgerianMusicTrack) {
-        val updated = _uiState.value.settings.copy(selectedMusicTrack = track)
-        soundManager.currentTrack = track
-        updateSettings(updated)
-        soundManager.playButtonClick()
-    }
-
-    fun toggleCategory(category: Category) {
-        val currentCats = _uiState.value.settings.enabledCategories.toMutableSet()
-        if (category in currentCats) {
-            if (currentCats.size > 1) {
-                currentCats.remove(category)
-            }
-        } else {
-            currentCats.add(category)
-        }
-        updateSettings(_uiState.value.settings.copy(enabledCategories = currentCats))
-        soundManager.playButtonClick()
-    }
-
-    fun selectAllCategories() {
-        updateSettings(_uiState.value.settings.copy(enabledCategories = Category.values().toSet()))
-        soundManager.playButtonClick()
-    }
-
-    // --- Match Flow ---
     fun startNewMatch() {
+        soundManager.playStartGame()
         repository.resetMatchHistory()
-        soundManager.stopMenuMusic()
-
-        // Reset scores
         val resetTeams = _uiState.value.teams.map { team ->
             team.copy(
                 score = 0,
                 currentRepIndex = 0,
                 currentJudgeIndex = if (team.players.size > 1) 1 else 0,
-                players = team.players.map { p ->
-                    p.copy(score = 0, correctGuesses = 0, skips = 0, badPerformances = 0, representativeTurns = 0, judgeTurns = 0, wordsCompleted = 0)
-                }
+                players = team.players.map { it.copy(score = 0, correctGuesses = 0, skips = 0, badPerformances = 0, wordsCompleted = 0) }
             )
         }
-
         _uiState.update {
             it.copy(
                 teams = resetTeams,
                 currentTeamIndex = 0,
-                matchStartTimeMs = System.currentTimeMillis(),
-                matchWordHistory = emptyList(),
-                turnWordHistory = emptyList(),
-                winningTeam = null,
-                currentScreen = GameScreen.TURN_INTRO,
-                funnyBannerMessage = DefaultWordsData.funnyGuidancePhrases.random()
-            )
-        }
-    }
-
-    /**
-     * Rapid Frenzy Mode: Launches active turn immediately with continuous words rolling
-     * as soon as timer starts!
-     */
-    fun startFrenzyRoundDirectly() {
-        val state = _uiState.value
-        val word = repository.pickNextWord(state.settings.enabledCategories)
-
-        val activeRep = state.activeRepresentative
-        val activeJudge = state.activeJudge
-        val updatedTeams = state.teams.map { team ->
-            if (team.id == state.activeTeam?.id) {
-                team.copy(
-                    players = team.players.map { p ->
-                        when (p.id) {
-                            activeRep?.id -> p.copy(representativeTurns = p.representativeTurns + 1)
-                            activeJudge?.id -> p.copy(judgeTurns = p.judgeTurns + 1)
-                            else -> p
-                        }
-                    }
-                )
-            } else team
-        }
-
-        soundManager.playTurnStart()
-        soundManager.stopMenuMusic()
-        randomEventCheckedForCurrentTurn = false
-
-        _uiState.update {
-            it.copy(
-                teams = updatedTeams,
-                currentWord = word,
+                currentWord = null,
+                isWordRevealed = false,
+                isTimerRunning = false,
                 remainingSeconds = it.settings.turnDurationSeconds,
                 turnWordHistory = emptyList(),
-                isTimerRunning = true,
-                isProcessingAction = false,
-                currentScreen = GameScreen.ACTIVE_PLAY
+                matchWordHistory = emptyList(),
+                matchStartTimeMs = System.currentTimeMillis(),
+                matchDurationSeconds = 0L,
+                winningTeam = null,
+                funnyBannerMessage = DefaultWordsData.funnyGuidancePhrases.random(),
+                currentScreen = GameScreen.TURN_INTRO,
+                showExitConfirmDialog = false
             )
         }
-        startAuthoritativeTimer()
     }
 
     fun prepareTurnReveal() {
-        val state = _uiState.value
-        val word = repository.pickNextWord(state.settings.enabledCategories)
-
-        // Increment representative and judge turn count for active players
-        val activeRep = state.activeRepresentative
-        val activeJudge = state.activeJudge
-        val updatedTeams = state.teams.map { team ->
-            if (team.id == state.activeTeam?.id) {
-                team.copy(
-                    players = team.players.map { p ->
-                        when (p.id) {
-                            activeRep?.id -> p.copy(representativeTurns = p.representativeTurns + 1)
-                            activeJudge?.id -> p.copy(judgeTurns = p.judgeTurns + 1)
-                            else -> p
-                        }
-                    }
-                )
-            } else team
-        }
-
+        val word = repository.pickNextWord(_uiState.value.settings.enabledCategories)
         _uiState.update {
             it.copy(
-                teams = updatedTeams,
                 currentWord = word,
                 isWordRevealed = false,
-                remainingSeconds = it.settings.turnDurationSeconds,
-                turnWordHistory = emptyList(),
-                isTimerRunning = false,
-                currentScreen = GameScreen.PRIVATE_REVEAL,
-                funnyBannerMessage = "🤫 غير الممثل يشوف الشاشة!"
+                currentScreen = GameScreen.PRIVATE_REVEAL
             )
         }
-        soundManager.playButtonClick()
-    }
-
-    fun revealSecretWord() {
-        _uiState.update { it.copy(isWordRevealed = true) }
-        soundManager.playButtonClick()
     }
 
     fun startActiveTurn() {
-        soundManager.playTurnStart()
         soundManager.stopMenuMusic()
+        soundManager.playTurnStart()
+        val word = _uiState.value.currentWord ?: repository.pickNextWord(_uiState.value.settings.enabledCategories)
         randomEventCheckedForCurrentTurn = false
-
         _uiState.update {
             it.copy(
-                currentScreen = GameScreen.ACTIVE_PLAY,
+                currentWord = word,
+                isWordRevealed = true,
                 isTimerRunning = true,
-                isWordRevealed = false, // Hides secret word from judge screen
-                isProcessingAction = false
+                remainingSeconds = it.settings.turnDurationSeconds,
+                turnWordHistory = emptyList(),
+                activeEvent = null,
+                isEventDialogVisible = false,
+                currentScreen = GameScreen.ACTIVE_PLAY
             )
         }
-        startAuthoritativeTimer()
+        startTimerLoop()
     }
 
-    private fun startAuthoritativeTimer() {
+    private fun startTimerLoop() {
         timerJob?.cancel()
         timerJob = viewModelScope.launch {
-            while (_uiState.value.remainingSeconds > 0 && _uiState.value.isTimerRunning) {
+            while (_uiState.value.isTimerRunning && _uiState.value.remainingSeconds > 0) {
                 delay(1000)
-                if (!_uiState.value.isTimerRunning) break
-
-                val newSec = _uiState.value.remainingSeconds - 1
-                _uiState.update { it.copy(remainingSeconds = newSec) }
-
-                // Audio tick on last 5 seconds
-                if (newSec in 1..5) {
-                    soundManager.playCountdownTick(newSec)
+                val currentSec = _uiState.value.remainingSeconds - 1
+                if (currentSec == 10 || currentSec == 5) {
+                    soundManager.playTickWarning()
+                } else if (currentSec <= 3 && currentSec > 0) {
+                    soundManager.playTickWarning()
                 }
 
-                // Random event check during active gameplay
-                checkAndTriggerRandomEvent(newSec)
+                // Check for random meme event trigger
+                checkRandomMemeEventTrigger(currentSec)
 
-                if (newSec <= 0) {
+                _uiState.update { it.copy(remainingSeconds = currentSec) }
+
+                if (currentSec <= 0) {
                     endCurrentTurn()
                     break
                 }
@@ -412,45 +340,38 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun checkAndTriggerRandomEvent(remainingSec: Int) {
+    private fun checkRandomMemeEventTrigger(currentSec: Int) {
         val state = _uiState.value
         val freq = state.settings.randomEventFrequency
         if (freq == EventFrequency.OFF || randomEventCheckedForCurrentTurn) return
+        val totalTurnTime = state.settings.turnDurationSeconds
+        val elapsed = totalTurnTime - currentSec
 
-        val totalDuration = state.settings.turnDurationSeconds
-        val elapsed = totalDuration - remainingSec
-        // Do not trigger in grace period (first 5 seconds or last 5 seconds)
-        if (elapsed >= state.settings.gracePeriodSeconds && remainingSec > 8) {
+        if (elapsed in state.settings.gracePeriodSeconds..(totalTurnTime - 10)) {
             val roll = (1..100).random()
             if (roll <= freq.chancePercentage) {
                 randomEventCheckedForCurrentTurn = true
-                triggerRandomMemeEvent()
+                val event = repository.pickRandomMemeEvent()
+                pauseTimer()
+                soundManager.playMemeEventAlert()
+                _uiState.update {
+                    it.copy(
+                        activeEvent = event,
+                        isEventDialogVisible = true
+                    )
+                }
             }
-        }
-    }
-
-    fun triggerRandomMemeEvent() {
-        pauseTimer()
-        val event = repository.pickRandomMemeEvent()
-        soundManager.playRandomEventTrigger()
-        _uiState.update {
-            it.copy(
-                activeEvent = event,
-                isEventDialogVisible = true
-            )
         }
     }
 
     fun dismissRandomEventAndResume() {
         _uiState.update {
             it.copy(
-                isEventDialogVisible = false,
                 activeEvent = null,
-                isTimerRunning = true
+                isEventDialogVisible = false
             )
         }
-        soundManager.playButtonClick()
-        startAuthoritativeTimer()
+        resumeTimer()
     }
 
     fun pauseTimer() {
@@ -461,24 +382,22 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun resumeTimer() {
         if (_uiState.value.remainingSeconds > 0) {
             _uiState.update { it.copy(isTimerRunning = true) }
-            startAuthoritativeTimer()
+            startTimerLoop()
         }
     }
 
-    // --- Word Resolution with Double-Tap Protection ---
     fun resolveWord(type: ResolutionType, targetTeamId: String? = null) {
         val state = _uiState.value
-        if (state.isProcessingAction || !state.isTimerRunning || state.currentWord == null) return
-
-        _uiState.update { it.copy(isProcessingAction = true) }
-
-        val word = state.currentWord
+        if (state.isProcessingAction) return // Guard against rapid multi-clicks
+        val currentWord = state.currentWord ?: return
         val activeTeam = state.activeTeam ?: return
         val activeRep = state.activeRepresentative
         val activeJudge = state.activeJudge
 
+        _uiState.update { it.copy(isProcessingAction = true) }
+
         val pointsDelta = when (type) {
-            ResolutionType.CORRECT -> word.points
+            ResolutionType.CORRECT -> currentWord.points
             ResolutionType.SKIP -> ResolutionType.SKIP.points
             ResolutionType.BAD_PERFORMANCE -> ResolutionType.BAD_PERFORMANCE.points
         }
@@ -486,63 +405,55 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         when (type) {
             ResolutionType.CORRECT -> soundManager.playCorrect()
             ResolutionType.SKIP -> soundManager.playSkip()
-            ResolutionType.BAD_PERFORMANCE -> soundManager.playBadPerformance()
+            ResolutionType.BAD_PERFORMANCE -> soundManager.playFail()
         }
 
-        // For correct answers, points go to the guessing team (targetTeamId or activeTeam)
-        // For penalties (SKIP / BAD_PERFORMANCE), penalties ALWAYS apply to activeTeam
-        val targetTeamIdResolved = if (type == ResolutionType.CORRECT) {
-            targetTeamId ?: activeTeam.id
-        } else {
-            activeTeam.id
-        }
-
+        val targetTeamIdResolved = targetTeamId ?: activeTeam.id
         val turnResult = TurnResult(
             teamId = targetTeamIdResolved,
             repPlayerId = activeRep?.id ?: "",
             judgePlayerId = activeJudge?.id,
-            word = word,
+            word = currentWord,
             type = type,
             pointsDelta = pointsDelta
         )
 
         val updatedTeams = state.teams.map { team ->
             when {
-                // Case 1: Team that scored points or received penalty
-                team.id == targetTeamIdResolved && targetTeamIdResolved == activeTeam.id -> {
+                team.id == activeTeam.id && (type == ResolutionType.SKIP || type == ResolutionType.BAD_PERFORMANCE) -> {
                     val newScore = (team.score + pointsDelta).coerceAtLeast(0)
                     team.copy(
                         score = newScore,
                         players = team.players.map { player ->
                             if (player.id == activeRep?.id) {
-                                val newPlayerScore = (player.score + pointsDelta).coerceAtLeast(0)
                                 when (type) {
-                                    ResolutionType.CORRECT -> player.copy(
-                                        score = newPlayerScore,
-                                        correctGuesses = player.correctGuesses + 1,
-                                        wordsCompleted = player.wordsCompleted + 1
-                                    )
-                                    ResolutionType.SKIP -> player.copy(
-                                        score = newPlayerScore,
-                                        skips = player.skips + 1,
-                                        wordsCompleted = player.wordsCompleted + 1
-                                    )
-                                    ResolutionType.BAD_PERFORMANCE -> player.copy(
-                                        score = newPlayerScore,
-                                        badPerformances = player.badPerformances + 1,
-                                        wordsCompleted = player.wordsCompleted + 1
-                                    )
+                                    ResolutionType.SKIP -> player.copy(skips = player.skips + 1, wordsCompleted = player.wordsCompleted + 1)
+                                    ResolutionType.BAD_PERFORMANCE -> player.copy(badPerformances = player.badPerformances + 1, wordsCompleted = player.wordsCompleted + 1)
+                                    else -> player
                                 }
                             } else player
                         }
                     )
                 }
-                // Case 2: Another team guessed correctly (they get the points)
+                team.id == activeTeam.id && targetTeamIdResolved == activeTeam.id && type == ResolutionType.CORRECT -> {
+                    val newScore = (team.score + pointsDelta).coerceAtLeast(0)
+                    team.copy(
+                        score = newScore,
+                        players = team.players.map { player ->
+                            if (player.id == activeRep?.id) {
+                                player.copy(
+                                    score = player.score + pointsDelta,
+                                    correctGuesses = player.correctGuesses + 1,
+                                    wordsCompleted = player.wordsCompleted + 1
+                                )
+                            } else player
+                        }
+                    )
+                }
                 team.id == targetTeamIdResolved -> {
                     val newScore = (team.score + pointsDelta).coerceAtLeast(0)
                     team.copy(score = newScore)
                 }
-                // Case 3: Active team when another team guessed correctly (rep still credited for successful act)
                 team.id == activeTeam.id && type == ResolutionType.CORRECT -> {
                     team.copy(
                         players = team.players.map { player ->
@@ -562,14 +473,12 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val updatedTurnHistory = state.turnWordHistory + turnResult
         val updatedMatchHistory = state.matchWordHistory + turnResult
 
-        // Check if winning score achieved immediately by any team
         val winningCandidate = updatedTeams.find { it.score >= state.settings.winningScore }
         if (winningCandidate != null) {
             timerJob?.cancel()
             val matchDuration = (System.currentTimeMillis() - state.matchStartTimeMs) / 1000
             soundManager.playVictory()
             recordMatchFinish(winningCandidate, updatedTeams, updatedMatchHistory, state.matchStartTimeMs)
-
             _uiState.update {
                 it.copy(
                     teams = updatedTeams,
@@ -585,9 +494,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
 
-        // Generate next word immediately for the same representative
         val nextWord = repository.pickNextWord(state.settings.enabledCategories)
-
         _uiState.update {
             it.copy(
                 teams = updatedTeams,
@@ -631,11 +538,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private fun endCurrentTurn() {
         timerJob?.cancel()
         soundManager.playTurnEnd()
-
         val state = _uiState.value
         val currentTeam = state.activeTeam
 
-        // Fair player rotation inside the active team
         val updatedTeams = state.teams.map { team ->
             if (team.id == currentTeam?.id && team.players.isNotEmpty()) {
                 val nextRep = (team.currentRepIndex + 1) % team.players.size
@@ -649,13 +554,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             } else team
         }
 
-        // Check if any team has won
         val winner = updatedTeams.find { it.score >= state.settings.winningScore }
         if (winner != null) {
             val matchDuration = (System.currentTimeMillis() - state.matchStartTimeMs) / 1000
             soundManager.playVictory()
             recordMatchFinish(winner, updatedTeams, state.matchWordHistory, state.matchStartTimeMs)
-
             _uiState.update {
                 it.copy(
                     teams = updatedTeams,
@@ -668,9 +571,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
 
-        // Move to next team
         val nextTeamIndex = (state.currentTeamIndex + 1) % updatedTeams.size
-
         _uiState.update {
             it.copy(
                 teams = updatedTeams,
@@ -694,7 +595,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun calculateStatistics(): MatchStatistics {
         val state = _uiState.value
         val allPlayers = state.teams.flatMap { it.players }
-
         val topScorer = allPlayers.maxByOrNull { it.score }
         val bestActor = allPlayers.maxByOrNull { it.correctGuesses }
         val mostSkips = allPlayers.maxByOrNull { it.skips }
@@ -718,7 +618,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
-    // --- Custom Word Management ---
     fun addCustomWord(text: String, category: Category, difficulty: Difficulty) {
         if (text.isBlank()) return
         repository.addCustomWord(text, category, difficulty)

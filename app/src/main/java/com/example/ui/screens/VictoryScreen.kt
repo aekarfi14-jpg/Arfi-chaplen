@@ -1,6 +1,5 @@
 package com.example.ui.screens
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -20,14 +19,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.R
 import com.example.data.model.GameScreen
 import com.example.engine.GameViewModel
+import com.example.i18n.AppStrings
 import com.example.ui.components.CreatorCreditFooter
 import com.example.ui.components.GlassCard
 import com.example.ui.components.atmosphericBackground
@@ -40,7 +37,8 @@ fun VictoryScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val winner = uiState.winningTeam ?: uiState.teams.maxByOrNull { it.score }
-    val winnerColor = winner?.let { Color(it.colorHex) } ?: DzGreen
+    val winnerColor = Color(winner?.colorHex ?: 0xFFE63946)
+    val lang = uiState.settings.appLanguage
 
     Scaffold(
         containerColor = Color.Transparent
@@ -50,50 +48,28 @@ fun VictoryScreen(
                 .fillMaxSize()
                 .atmosphericBackground()
                 .padding(innerPadding)
-                .padding(horizontal = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(top = 24.dp, bottom = 30.dp)
+            contentPadding = PaddingValues(top = 20.dp, bottom = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Trophy Image Hero
+            // Grand Trophy Banner Card
             item {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.padding(top = 10.dp)
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(170.dp)
-                            .clip(CircleShape)
-                            .background(
-                                Brush.radialGradient(
-                                    colors = listOf(DzGold.copy(alpha = 0.35f), Color.Transparent)
-                                )
-                            )
-                    )
-
-                    Image(
-                        painter = painterResource(id = R.drawable.img_trophy),
-                        contentDescription = "كأس الفوز",
-                        modifier = Modifier
-                            .size(160.dp)
-                            .clip(RoundedCornerShape(24.dp))
-                    )
-                }
-            }
-
-            // Victory Announcement
-            item {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("🏆", fontSize = 64.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "🎉 مبروووك الفوز! 🏆",
-                        fontSize = 30.sp,
+                        text = AppStrings.victoryTitle(lang),
+                        fontSize = 22.sp,
                         fontWeight = FontWeight.Black,
-                        color = DzGoldLight,
-                        textAlign = TextAlign.Center
+                        color = DzGoldLight
                     )
-
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -105,7 +81,7 @@ fun VictoryScreen(
                     ) {
                         Text(winner?.emoji ?: "🔴", fontSize = 28.sp, modifier = Modifier.padding(end = 8.dp))
                         Text(
-                            text = winner?.name ?: "الفريق الفائز",
+                            text = winner?.name ?: AppStrings.winningTeamBanner(lang, ""),
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Black,
                             color = Color.White
@@ -115,7 +91,7 @@ fun VictoryScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "وصلوا لـ ${winner?.score ?: 0} دج وربحوا القعدة 🇩🇿🔥",
+                        text = AppStrings.winningScoreBanner(lang, winner?.score ?: 0),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = DzEmeraldGlow
@@ -136,12 +112,11 @@ fun VictoryScreen(
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Text(
-                            text = "🏅 الترتيب النهائي للماتش:",
+                            text = AppStrings.finalStandings(lang),
                             fontWeight = FontWeight.Black,
                             fontSize = 16.sp,
                             color = DzGoldLight
                         )
-
                         uiState.teams.sortedByDescending { it.score }.forEachIndexed { idx, team ->
                             val medal = when (idx) {
                                 0 -> "🥇"
@@ -150,7 +125,6 @@ fun VictoryScreen(
                                 else -> "${idx + 1}."
                             }
                             val teamColor = Color(team.colorHex)
-
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -192,9 +166,8 @@ fun VictoryScreen(
                                         )
                                     }
                                 }
-
                                 Text(
-                                    text = "${team.score} دج",
+                                    text = "${team.score} ${AppStrings.currencyUnit(lang)}",
                                     fontWeight = FontWeight.Black,
                                     fontSize = 16.sp,
                                     color = if (idx == 0) DzGoldLight else Color.White
@@ -228,7 +201,7 @@ fun VictoryScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "📊 تفاصيل وإحصائيات القعدة",
+                            text = AppStrings.viewStatsBtn(lang),
                             fontSize = 17.sp,
                             fontWeight = FontWeight.Black,
                             color = Color.Black
@@ -250,7 +223,7 @@ fun VictoryScreen(
                     ) {
                         Icon(Icons.Default.Refresh, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("🔥 ثأر وماتش جديد!", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text(AppStrings.rematchBtn(lang), fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     }
 
                     // Exit to Home
@@ -258,7 +231,7 @@ fun VictoryScreen(
                         onClick = { viewModel.exitMatchToHome() },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("العودة للقائمة الرئيسية 🏠", color = TextSecondary, fontSize = 15.sp)
+                        Text(AppStrings.returnHomeBtn(lang), color = TextSecondary, fontSize = 15.sp)
                     }
                 }
             }

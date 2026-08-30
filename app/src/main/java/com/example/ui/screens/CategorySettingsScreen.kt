@@ -5,12 +5,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -19,13 +16,14 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.model.AppLanguage
 import com.example.data.model.Category
 import com.example.data.model.EventFrequency
 import com.example.data.model.GameScreen
 import com.example.engine.GameViewModel
+import com.example.i18n.AppStrings
 import com.example.ui.components.ArfiTopBar
 import com.example.ui.components.GlassCard
-import com.example.ui.components.SetupStepIndicator
 import com.example.ui.components.atmosphericBackground
 import com.example.ui.theme.*
 
@@ -36,61 +34,37 @@ fun CategorySettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val settings = uiState.settings
+    val lang = settings.appLanguage
 
     Scaffold(
         topBar = {
-            Column(modifier = Modifier.background(DarkSurface.copy(alpha = 0.95f))) {
-                ArfiTopBar(
-                    title = "⚙️ الفئات وإعدادات الماتش",
-                    onBack = { viewModel.navigateTo(GameScreen.SETUP_TEAMS) },
-                    sfxEnabled = settings.sfxEnabled,
-                    musicEnabled = settings.musicEnabled,
-                    onToggleSfx = { viewModel.updateSettings(settings.copy(sfxEnabled = !settings.sfxEnabled)) },
-                    onToggleMusic = { viewModel.updateSettings(settings.copy(musicEnabled = !settings.musicEnabled)) }
-                )
-                SetupStepIndicator(currentStep = 2)
-            }
+            ArfiTopBar(
+                title = AppStrings.settingsTitle(lang),
+                onBack = { viewModel.navigateTo(GameScreen.SETUP_TEAMS) }
+            )
         },
         bottomBar = {
             Surface(
-                color = DarkSurface.copy(alpha = 0.95f),
-                tonalElevation = 8.dp,
-                modifier = Modifier.navigationBarsPadding()
+                color = DarkBackground.copy(alpha = 0.95f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OutlinedButton(
-                        onClick = { viewModel.navigateTo(GameScreen.SETUP_TEAMS) },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(54.dp),
-                        shape = RoundedCornerShape(18.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary)
-                    ) {
-                        Text("⬅️ رجوع", fontWeight = FontWeight.Bold)
-                    }
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
+                Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
                     Button(
                         onClick = { viewModel.navigateTo(GameScreen.SETUP_REVIEW) },
                         modifier = Modifier
-                            .weight(1.3f)
-                            .height(54.dp)
-                            .testTag("next_to_review_btn"),
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .testTag("btn_proceed_review"),
                         shape = RoundedCornerShape(18.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = DzEmeraldGlow)
+                        colors = ButtonDefaults.buttonColors(containerColor = DzGreen)
                     ) {
                         Text(
-                            text = "التالي: مراجعة القعدة 📋",
-                            fontSize = 15.sp,
+                            text = AppStrings.continueToReview(lang),
+                            fontSize = 17.sp,
                             fontWeight = FontWeight.Black,
-                            color = Color.Black
+                            color = Color.White
                         )
                     }
                 }
@@ -105,14 +79,13 @@ fun CategorySettingsScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
-            contentPadding = PaddingValues(top = 12.dp, bottom = 20.dp)
+            contentPadding = PaddingValues(top = 10.dp, bottom = 20.dp)
         ) {
-            // Match Core Duration Presets
+            // Turn Timer settings card
             item {
                 GlassCard(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    borderColor = Color(0x3500E676)
+                    shape = RoundedCornerShape(20.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(
@@ -121,111 +94,35 @@ fun CategorySettingsScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "⏱️ وقت الدور الواحد:",
-                                fontWeight = FontWeight.Black,
-                                fontSize = 16.sp,
-                                color = Color.White
-                            )
-                            Text(
-                                text = "${settings.turnDurationSeconds} ثانية",
-                                fontWeight = FontWeight.Black,
-                                fontSize = 16.sp,
-                                color = DzEmeraldGlow
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        // Quick duration preset pills
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            listOf(15, 30, 45, 60, 90).forEach { sec ->
-                                val isSelected = settings.turnDurationSeconds == sec
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .background(if (isSelected) DzGreenDark else DarkSurfaceVariant)
-                                        .border(
-                                            width = 1.dp,
-                                            color = if (isSelected) DzEmeraldGlow else Color(0x15FFFFFF),
-                                            shape = RoundedCornerShape(12.dp)
-                                        )
-                                        .clickable { viewModel.updateSettings(settings.copy(turnDurationSeconds = sec)) }
-                                        .padding(vertical = 8.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "${sec}ث",
-                                        fontWeight = if (isSelected) FontWeight.Black else FontWeight.Medium,
-                                        fontSize = 13.sp,
-                                        color = if (isSelected) Color.White else TextSecondary
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Target Winning Score Presets
-            item {
-                GlassCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    borderColor = Color(0x35FFB703)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "🏆 نقاط الفوز بالماتش:",
-                                fontWeight = FontWeight.Black,
-                                fontSize = 16.sp,
-                                color = Color.White
-                            )
-                            Text(
-                                text = "${settings.winningScore} دج",
-                                fontWeight = FontWeight.Black,
-                                fontSize = 16.sp,
+                                text = AppStrings.turnDurationLabel(lang),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
                                 color = DzGoldLight
                             )
+                            Text(
+                                text = "${settings.turnDurationSeconds} ${AppStrings.secondsUnit(lang)}",
+                                fontWeight = FontWeight.Black,
+                                fontSize = 16.sp,
+                                color = Color.White
+                            )
                         }
-
                         Spacer(modifier = Modifier.height(10.dp))
-
-                        // Winning score preset pills
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            listOf(500, 1000, 1500, 2000, 3000).forEach { pts ->
-                                val isSelected = settings.winningScore == pts
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .background(if (isSelected) DzGoldDark.copy(alpha = 0.3f) else DarkSurfaceVariant)
-                                        .border(
-                                            width = 1.dp,
-                                            color = if (isSelected) DzGold else Color(0x15FFFFFF),
-                                            shape = RoundedCornerShape(12.dp)
-                                        )
-                                        .clickable { viewModel.updateSettings(settings.copy(winningScore = pts)) }
-                                        .padding(vertical = 8.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "$pts",
-                                        fontWeight = if (isSelected) FontWeight.Black else FontWeight.Medium,
-                                        fontSize = 12.sp,
-                                        color = if (isSelected) DzGoldLight else TextSecondary
+                            listOf(45, 60, 90).forEach { sec ->
+                                val isSel = settings.turnDurationSeconds == sec
+                                Button(
+                                    onClick = { viewModel.updateSettings(settings.copy(turnDurationSeconds = sec)) },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (isSel) DzGreen else DarkSurfaceVariant,
+                                        contentColor = if (isSel) Color.White else TextMuted
                                     )
+                                ) {
+                                    Text("$sec ${AppStrings.secondsUnit(lang)}", fontSize = 13.sp, fontWeight = if (isSel) FontWeight.Black else FontWeight.Normal)
                                 }
                             }
                         }
@@ -233,54 +130,124 @@ fun CategorySettingsScreen(
                 }
             }
 
-            // Random Events Frequency Card
+            // Winning Score Goal card
             item {
                 GlassCard(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    borderColor = Color(0x25FFFFFF)
+                    shape = RoundedCornerShape(20.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = AppStrings.winningScoreLabel(lang),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = DzGoldLight
+                            )
+                            Text(
+                                text = "${settings.winningScore} ${AppStrings.currencyUnit(lang)}",
+                                fontWeight = FontWeight.Black,
+                                fontSize = 16.sp,
+                                color = DzGold
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            listOf(500, 1000, 1500).forEach { pts ->
+                                val isSel = settings.winningScore == pts
+                                Button(
+                                    onClick = { viewModel.updateSettings(settings.copy(winningScore = pts)) },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (isSel) DzGoldDark else DarkSurfaceVariant,
+                                        contentColor = if (isSel) Color.Black else TextMuted
+                                    )
+                                ) {
+                                    Text("$pts ${AppStrings.currencyUnit(lang)}", fontSize = 13.sp, fontWeight = if (isSel) FontWeight.Black else FontWeight.Normal)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Random Meme Events Frequency
+            item {
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = "🎲 وتيرة الأحداث والمفاجآت الفكاهية:",
-                            fontWeight = FontWeight.Black,
+                            text = AppStrings.randomEventsLabel(lang),
+                            fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
-                            color = Color.White
+                            color = DzGoldLight
                         )
-                        Text(
-                            text = "تحديات مفاجئة للممثل فوسط الدور (تكلم بشلحة، اضحك بلا صوت...)",
-                            fontSize = 11.sp,
-                            color = TextSecondary
-                        )
-
                         Spacer(modifier = Modifier.height(10.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             EventFrequency.values().forEach { freq ->
-                                val isSelected = settings.randomEventFrequency == freq
+                                val isSel = settings.randomEventFrequency == freq
+                                val freqLabel = when (freq) {
+                                    EventFrequency.OFF -> if (lang == AppLanguage.ENGLISH) "Disabled ❌" else freq.label
+                                    EventFrequency.VERY_RARE -> if (lang == AppLanguage.ENGLISH) "Very Rare 🐢 (Recommended)" else freq.label
+                                    EventFrequency.RARE -> if (lang == AppLanguage.ENGLISH) "Rare 🎲" else freq.label
+                                    EventFrequency.NORMAL -> if (lang == AppLanguage.ENGLISH) "Frequent 🔥" else freq.label
+                                }
+                                val freqDesc = when (freq) {
+                                    EventFrequency.OFF -> if (lang == AppLanguage.ENGLISH) "No surprise events will trigger" else freq.description
+                                    EventFrequency.VERY_RARE -> if (lang == AppLanguage.ENGLISH) "Subtle occasional challenges to keep things lively" else freq.description
+                                    EventFrequency.RARE -> if (lang == AppLanguage.ENGLISH) "Occasional comedic challenge" else freq.description
+                                    EventFrequency.NORMAL -> if (lang == AppLanguage.ENGLISH) "Frequent comedic twists creating chaotic fun" else freq.description
+                                }
                                 Box(
                                     modifier = Modifier
-                                        .weight(1f)
+                                        .fillMaxWidth()
                                         .clip(RoundedCornerShape(12.dp))
-                                        .background(if (isSelected) DzRedDark.copy(alpha = 0.4f) else DarkSurfaceVariant)
+                                        .background(if (isSel) DzGreenDark else DarkSurfaceVariant)
                                         .border(
                                             width = 1.dp,
-                                            color = if (isSelected) DzRed else Color(0x15FFFFFF),
+                                            color = if (isSel) DzGold else Color.Transparent,
                                             shape = RoundedCornerShape(12.dp)
                                         )
                                         .clickable { viewModel.updateSettings(settings.copy(randomEventFrequency = freq)) }
-                                        .padding(vertical = 8.dp),
-                                    contentAlignment = Alignment.Center
+                                        .padding(horizontal = 12.dp, vertical = 8.dp)
                                 ) {
-                                    Text(
-                                        text = freq.label,
-                                        fontWeight = if (isSelected) FontWeight.Black else FontWeight.Normal,
-                                        fontSize = 11.sp,
-                                        color = if (isSelected) Color.White else TextSecondary
-                                    )
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column {
+                                            Text(
+                                                text = freqLabel,
+                                                fontWeight = if (isSel) FontWeight.Black else FontWeight.Bold,
+                                                fontSize = 14.sp,
+                                                color = if (isSel) DzGoldLight else Color.White
+                                            )
+                                            Text(
+                                                text = freqDesc,
+                                                fontSize = 11.sp,
+                                                color = TextSecondary
+                                            )
+                                        }
+                                        RadioButton(
+                                            selected = isSel,
+                                            onClick = { viewModel.updateSettings(settings.copy(randomEventFrequency = freq)) },
+                                            colors = RadioButtonDefaults.colors(
+                                                selectedColor = DzGold,
+                                                unselectedColor = TextMuted
+                                            )
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -288,12 +255,11 @@ fun CategorySettingsScreen(
                 }
             }
 
-            // Algerian Procedural Music Library Selector
+            // Audio & Music Card
             item {
                 GlassCard(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    borderColor = Color(0x35FFB703)
+                    shape = RoundedCornerShape(20.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(
@@ -302,19 +268,36 @@ fun CategorySettingsScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column {
-                                Text(
-                                    text = "🎵 نوع الموسيقى الجزائرية:",
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 15.sp,
-                                    color = Color.White
-                                )
-                                Text(
-                                    text = "موسيقى تراثية وحماسية في الخلفية",
-                                    fontSize = 11.sp,
-                                    color = TextSecondary
-                                )
+                                Text(AppStrings.sfxLabel(lang), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text(AppStrings.sfxSubtitle(lang), color = TextSecondary, fontSize = 11.sp)
                             }
+                            Switch(
+                                checked = settings.sfxEnabled,
+                                onCheckedChange = { isEnabled ->
+                                    viewModel.updateSettings(settings.copy(sfxEnabled = isEnabled))
+                                },
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.White,
+                                    checkedTrackColor = DzGreen,
+                                    uncheckedThumbColor = TextMuted,
+                                    uncheckedTrackColor = DarkSurfaceVariant
+                                )
+                            )
+                        }
 
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Divider(color = Color(0x15FFFFFF))
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(AppStrings.musicLabel(lang), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text(AppStrings.musicSubtitle(lang), color = TextSecondary, fontSize = 11.sp)
+                            }
                             Switch(
                                 checked = settings.musicEnabled,
                                 onCheckedChange = { isEnabled ->
@@ -331,7 +314,6 @@ fun CategorySettingsScreen(
 
                         if (settings.musicEnabled) {
                             Spacer(modifier = Modifier.height(10.dp))
-
                             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 com.example.data.model.AlgerianMusicTrack.getAllTracks().forEach { track ->
                                     val isSelected = settings.selectedMusicTrack == track
@@ -371,7 +353,7 @@ fun CategorySettingsScreen(
                                                 }
                                             }
                                             if (isSelected) {
-                                                Text("🔥 شغال", fontSize = 11.sp, fontWeight = FontWeight.Black, color = DzEmeraldGlow)
+                                                Text(if (lang == AppLanguage.ENGLISH) "Playing" else "🔥 شغال", fontSize = 11.sp, fontWeight = FontWeight.Black, color = DzEmeraldGlow)
                                             }
                                         }
                                     }
@@ -390,13 +372,13 @@ fun CategorySettingsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "🎭 فئات الكلمات المتاحة:",
+                        text = AppStrings.availableCategoriesLabel(lang),
                         fontWeight = FontWeight.Black,
                         fontSize = 17.sp,
                         color = Color.White
                     )
                     Text(
-                        text = "${settings.enabledCategories.size} مفعلة من ${Category.values().size}",
+                        text = AppStrings.enabledOf(lang, settings.enabledCategories.size, Category.values().size),
                         fontSize = 13.sp,
                         color = DzEmeraldGlow,
                         fontWeight = FontWeight.Bold
@@ -408,6 +390,8 @@ fun CategorySettingsScreen(
             items(Category.values().size) { idx ->
                 val cat = Category.values()[idx]
                 val isEnabled = settings.enabledCategories.contains(cat)
+                val catTitle = AppStrings.categoryName(cat, lang)
+                val catDesc = AppStrings.categoryDescription(cat, lang)
 
                 GlassCard(
                     modifier = Modifier
@@ -442,18 +426,16 @@ fun CategorySettingsScreen(
                             ) {
                                 Text(cat.icon, fontSize = 20.sp)
                             }
-
                             Spacer(modifier = Modifier.width(12.dp))
-
                             Column {
                                 Text(
-                                    text = cat.displayName,
+                                    text = catTitle,
                                     fontWeight = FontWeight.Black,
                                     fontSize = 15.sp,
                                     color = if (isEnabled) Color.White else TextMuted
                                 )
                                 Text(
-                                    text = cat.description,
+                                    text = catDesc,
                                     fontSize = 12.sp,
                                     color = if (isEnabled) TextSecondary else TextMuted,
                                     maxLines = 1

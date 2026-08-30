@@ -1,5 +1,14 @@
 package com.example.data.model
 
+enum class AppLanguage(val code: String, val displayName: String, val flag: String) {
+    ARABIC("ar", "العربية", "🇩🇿"),
+    ENGLISH("en", "English", "🇬🇧");
+
+    companion object {
+        fun fromCode(code: String): AppLanguage = if (code.equals("en", ignoreCase = true)) ENGLISH else ARABIC
+    }
+}
+
 enum class Category(
     val id: String,
     val displayName: String,
@@ -142,7 +151,8 @@ data class GameSettings(
     val sfxEnabled: Boolean = true,
     val musicEnabled: Boolean = true,
     val selectedMusicTrack: AlgerianMusicTrack = AlgerianMusicTrack.RAP_RAI,
-    val gracePeriodSeconds: Int = 5 // Do not trigger event in first X seconds
+    val gracePeriodSeconds: Int = 5,
+    val appLanguage: AppLanguage = AppLanguage.ARABIC
 )
 
 enum class GameScreen {
@@ -206,4 +216,3 @@ data class SavedMatchRecord(
     val totalWordsPlayed: Int,
     val correctWordsCount: Int
 )
-

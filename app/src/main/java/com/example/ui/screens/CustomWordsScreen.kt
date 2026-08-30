@@ -2,11 +2,9 @@ package com.example.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -22,11 +20,13 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.model.AppLanguage
 import com.example.data.model.Category
 import com.example.data.model.CharadeWord
 import com.example.data.model.Difficulty
 import com.example.data.model.GameScreen
 import com.example.engine.GameViewModel
+import com.example.i18n.AppStrings
 import com.example.ui.components.ArfiTopBar
 import com.example.ui.components.GlassCard
 import com.example.ui.components.atmosphericBackground
@@ -38,9 +38,9 @@ fun CustomWordsScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val lang = uiState.settings.appLanguage
     var showAddDialog by remember { mutableStateOf(false) }
     var editingWord by remember { mutableStateOf<CharadeWord?>(null) }
-
     var inputText by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf(Category.DZ) }
     var selectedDifficulty by remember { mutableStateOf(Difficulty.EASY) }
@@ -48,12 +48,8 @@ fun CustomWordsScreen(
     Scaffold(
         topBar = {
             ArfiTopBar(
-                title = "📚 بنك الكلمات والتخصيص",
-                onBack = { viewModel.navigateTo(GameScreen.HOME) },
-                sfxEnabled = uiState.settings.sfxEnabled,
-                musicEnabled = uiState.settings.musicEnabled,
-                onToggleSfx = { viewModel.updateSettings(uiState.settings.copy(sfxEnabled = !uiState.settings.sfxEnabled)) },
-                onToggleMusic = { viewModel.updateSettings(uiState.settings.copy(musicEnabled = !uiState.settings.musicEnabled)) }
+                title = AppStrings.customWordsTitle(lang),
+                onBack = { viewModel.navigateTo(GameScreen.HOME) }
             )
         },
         floatingActionButton = {
@@ -62,14 +58,22 @@ fun CustomWordsScreen(
                     inputText = ""
                     selectedCategory = Category.DZ
                     selectedDifficulty = Difficulty.EASY
+                    editingWord = null
                     showAddDialog = true
                 },
-                containerColor = DzEmeraldGlow,
-                contentColor = Color.Black,
-                shape = CircleShape,
-                modifier = Modifier.testTag("fab_add_custom_word")
+                containerColor = DzGreen,
+                contentColor = Color.White,
+                shape = RoundedCornerShape(18.dp),
+                modifier = Modifier.testTag("add_custom_word_fab")
             ) {
-                Icon(Icons.Default.Add, contentDescription = "إضافة كلمة مخصصة")
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add")
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(AppStrings.addCustomWordBtn(lang), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                }
             }
         },
         containerColor = Color.Transparent
@@ -80,56 +84,16 @@ fun CustomWordsScreen(
                 .atmosphericBackground()
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(top = 12.dp, bottom = 80.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            contentPadding = PaddingValues(top = 10.dp, bottom = 80.dp)
         ) {
-            // Library summary header
-            item {
-                GlassCard(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    borderColor = Color(0x35FFB703)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "🇩🇿 مكتبة الكلمات الجزائرية الجاهزة:",
-                            fontWeight = FontWeight.Black,
-                            fontSize = 16.sp,
-                            color = DzGoldLight
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = "تحتوي اللعبة على أكثر من ${uiState.totalWordsInLibrary} كلمة وموقف جزائري بدون إنترنت! ويمكنك أيضاً إضافة كلماتك الخاصة مع أصحابك وعائلتك 💡",
-                            fontSize = 13.sp,
-                            color = TextSecondary,
-                            lineHeight = 18.sp
-                        )
-                    }
-                }
-            }
-
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "✍️ كلماتك المخصصة (${uiState.customWords.size}):",
-                        fontWeight = FontWeight.Black,
-                        fontSize = 17.sp,
-                        color = Color.White
-                    )
-                }
-            }
-
             if (uiState.customWords.isEmpty()) {
                 item {
                     GlassCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        borderColor = Color(0x20FFFFFF),
-                        containerColor = DarkSurface.copy(alpha = 0.5f)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 40.dp),
+                        shape = RoundedCornerShape(20.dp)
                     ) {
                         Column(
                             modifier = Modifier
@@ -140,13 +104,13 @@ fun CustomWordsScreen(
                             Text("✨", fontSize = 32.sp)
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "مازال ما أضفت حتى كلمة مخصصة",
+                                text = AppStrings.noCustomWordsYet(lang),
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White,
                                 fontSize = 15.sp
                             )
                             Text(
-                                text = "اضغط على الزر الأخضر بالأسفل لإضافة أسماء أصدقائك أو نكت خاصة بقعدتكم!",
+                                text = AppStrings.noCustomWordsTip(lang),
                                 fontSize = 12.sp,
                                 color = TextSecondary
                             )
@@ -175,12 +139,11 @@ fun CustomWordsScreen(
                                     color = Color.White
                                 )
                                 Text(
-                                    text = "${word.category.icon} ${word.category.displayName} • ${if (word.difficulty == Difficulty.HARD) "صعيب (+100)" else "سهل (+50)"}",
+                                    text = "${word.category.icon} ${AppStrings.categoryName(word.category, lang)} • ${if (word.difficulty == Difficulty.HARD) (if (lang == AppLanguage.ENGLISH) "Hard (+100)" else "صعيب (+100)") else (if (lang == AppLanguage.ENGLISH) "Easy (+50)" else "سهل (+50)")}",
                                     fontSize = 12.sp,
                                     color = TextSecondary
                                 )
                             }
-
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 IconButton(
                                     onClick = {
@@ -190,13 +153,12 @@ fun CustomWordsScreen(
                                         selectedDifficulty = word.difficulty
                                     }
                                 ) {
-                                    Icon(Icons.Default.Edit, contentDescription = "تعديل", tint = DzGold)
+                                    Icon(Icons.Default.Edit, contentDescription = "Edit", tint = DzGold)
                                 }
-
                                 IconButton(
                                     onClick = { viewModel.deleteCustomWord(word.id) }
                                 ) {
-                                    Icon(Icons.Default.Delete, contentDescription = "حذف", tint = DzRed)
+                                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = DzRed)
                                 }
                             }
                         }
@@ -215,7 +177,7 @@ fun CustomWordsScreen(
             },
             title = {
                 Text(
-                    text = if (editingWord != null) "تعديل الكلمة" else "إضافة كلمة مخصصة جديدة",
+                    text = if (editingWord != null) (if (lang == AppLanguage.ENGLISH) "Edit Word" else "تعديل الكلمة") else (if (lang == AppLanguage.ENGLISH) "Add New Custom Word" else "إضافة كلمة مخصصة جديدة"),
                     color = Color.White,
                     fontWeight = FontWeight.Black
                 )
@@ -228,8 +190,8 @@ fun CustomWordsScreen(
                     OutlinedTextField(
                         value = inputText,
                         onValueChange = { inputText = it },
-                        label = { Text("نص الكلمة أو العبارة") },
-                        placeholder = { Text("مثال: يونس يطلب قهوة كحلة") },
+                        label = { Text(AppStrings.wordTextInputLabel(lang)) },
+                        placeholder = { Text(if (lang == AppLanguage.ENGLISH) "e.g. Drinking hot tea" else "مثال: يونس يطلب قهوة كحلة") },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = Color.White,
                             unfocusedTextColor = Color.White,
@@ -238,7 +200,7 @@ fun CustomWordsScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Text("الفئة:", fontSize = 13.sp, color = TextSecondary)
+                    Text(AppStrings.categoryLabel(lang), fontSize = 13.sp, color = TextSecondary)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -248,24 +210,24 @@ fun CustomWordsScreen(
                             FilterChip(
                                 selected = isSel,
                                 onClick = { selectedCategory = cat },
-                                label = { Text(cat.displayName.take(7), fontSize = 11.sp) },
+                                label = { Text(AppStrings.categoryName(cat, lang).take(8), fontSize = 11.sp) },
                                 colors = FilterChipDefaults.filterChipColors(selectedContainerColor = DzGreen)
                             )
                         }
                     }
 
-                    Text("الصعوبة:", fontSize = 13.sp, color = TextSecondary)
+                    Text(AppStrings.difficultyLabel(lang), fontSize = 13.sp, color = TextSecondary)
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         FilterChip(
                             selected = selectedDifficulty == Difficulty.EASY,
                             onClick = { selectedDifficulty = Difficulty.EASY },
-                            label = { Text("🟢 سهل (+50 دج)") },
+                            label = { Text(AppStrings.easyDiffLabel(lang)) },
                             colors = FilterChipDefaults.filterChipColors(selectedContainerColor = DzGreen)
                         )
                         FilterChip(
                             selected = selectedDifficulty == Difficulty.HARD,
                             onClick = { selectedDifficulty = Difficulty.HARD },
-                            label = { Text("🔴 صعيب (+100 دج)") },
+                            label = { Text(AppStrings.hardDiffLabel(lang)) },
                             colors = FilterChipDefaults.filterChipColors(selectedContainerColor = DzRedDark)
                         )
                     }
@@ -296,7 +258,7 @@ fun CustomWordsScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = DzGreen)
                 ) {
-                    Text("حفظ الكلمة", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text(AppStrings.saveWordBtn(lang), color = Color.White, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -304,7 +266,7 @@ fun CustomWordsScreen(
                     showAddDialog = false
                     editingWord = null
                 }) {
-                    Text("إلغاء", color = TextSecondary)
+                    Text(AppStrings.cancelBtn(lang), color = TextSecondary)
                 }
             },
             containerColor = DarkCardElevated

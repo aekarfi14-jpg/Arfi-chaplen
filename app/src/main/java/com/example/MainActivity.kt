@@ -19,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
+import com.example.data.model.AppLanguage
 import com.example.data.model.GameScreen
 import com.example.engine.GameViewModel
 import com.example.ui.screens.*
@@ -32,9 +33,17 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         setContent {
+            val uiState by viewModel.uiState.collectAsState()
+            val layoutDirection = if (uiState.settings.appLanguage == AppLanguage.ARABIC) {
+                LayoutDirection.Rtl
+            } else {
+                LayoutDirection.Ltr
+            }
+
             ArfiChaplenTheme {
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
                         color = DarkBackground

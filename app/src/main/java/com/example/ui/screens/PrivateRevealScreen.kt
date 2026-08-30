@@ -1,16 +1,16 @@
 package com.example.ui.screens
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,10 +22,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.model.AppLanguage
 import com.example.data.model.Difficulty
 import com.example.engine.GameViewModel
-import com.example.ui.components.ArfiTopBar
-import com.example.ui.components.DinarBadge
+import com.example.i18n.AppStrings
+import com.example.ui.components.CreatorCreditFooter
 import com.example.ui.components.GlassCard
 import com.example.ui.components.atmosphericBackground
 import com.example.ui.theme.*
@@ -36,204 +37,175 @@ fun PrivateRevealScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val word = uiState.currentWord
-    val actor = uiState.activeRepresentative
+    val activeWord = uiState.currentWord
+    val activeRep = uiState.activeRepresentative
+    val lang = uiState.settings.appLanguage
     var isRevealed by remember { mutableStateOf(false) }
 
-    Scaffold(
-        topBar = {
-            ArfiTopBar(
-                title = "🤫 كشف الكلمة بالسر للممثل",
-                onBack = { viewModel.requestExitConfirmation(true) },
-                sfxEnabled = uiState.settings.sfxEnabled,
-                musicEnabled = uiState.settings.musicEnabled,
-                onToggleSfx = { viewModel.updateSettings(uiState.settings.copy(sfxEnabled = !uiState.settings.sfxEnabled)) },
-                onToggleMusic = { viewModel.updateSettings(uiState.settings.copy(musicEnabled = !uiState.settings.musicEnabled)) }
-            )
-        },
-        bottomBar = {
-            Surface(
-                color = DarkSurface.copy(alpha = 0.95f),
-                tonalElevation = 8.dp,
-                modifier = Modifier.navigationBarsPadding()
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Button(
-                        onClick = { viewModel.startActiveTurn() },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(64.dp)
-                            .testTag("start_active_turn_btn"),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = DzEmeraldGlow)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = null,
-                            tint = Color.Black,
-                            modifier = Modifier.size(28.dp)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = "⏱️ ابدأ الدور وسلم الهاتف للحاكم!",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color.Black
-                        )
-                    }
-                }
-            }
-        },
-        containerColor = Color.Transparent
-    ) { innerPadding ->
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .atmosphericBackground()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
         Column(
-            modifier = modifier
-                .fillMaxSize()
-                .atmosphericBackground()
-                .padding(innerPadding)
-                .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Actor Notice
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Surface(
+                color = DzGold.copy(alpha = 0.2f),
+                shape = RoundedCornerShape(16.dp),
+                border = ButtonDefaults.outlinedButtonBorder
+            ) {
                 Text(
-                    text = "يا ${actor?.name ?: "الممثل"}، شوف الكلمة وحدك 🤫",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Black,
+                    text = "${AppStrings.actorRoleLabel(lang)} ${activeRep?.name ?: ""}",
                     color = DzGoldLight,
-                    textAlign = TextAlign.Center
-                )
-                Text(
-                    text = "ممنوع تنطق أي كلمة أو صوت أثناء التمثيل!",
-                    fontSize = 13.sp,
-                    color = TextSecondary,
-                    textAlign = TextAlign.Center
+                    fontWeight = FontWeight.Black,
+                    fontSize = 15.sp,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
             }
 
-            // Word Secret Reveal Card
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = AppStrings.privateRevealTitle(lang),
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Black,
+                color = Color.White
+            )
+
+            Text(
+                text = AppStrings.privateRevealWarning(lang),
+                fontSize = 13.sp,
+                color = TextSecondary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Secret Card Box (Tap to reveal)
             GlassCard(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(290.dp)
-                    .clickable { isRevealed = !isRevealed }
-                    .testTag("secret_word_card"),
-                shape = RoundedCornerShape(24.dp),
-                borderColor = if (isRevealed) DzGold else Color(0x3500E676),
-                borderWidth = 2.dp,
-                containerColor = DarkCard
+                    .height(240.dp)
+                    .clickable { isRevealed = true }
+                    .testTag("secret_reveal_card"),
+                shape = RoundedCornerShape(26.dp),
+                borderColor = if (isRevealed) DzEmeraldGlow else Color(0x35FFFFFF)
             ) {
-                AnimatedContent(
-                    targetState = isRevealed,
-                    transitionSpec = {
-                        fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
-                    },
-                    label = "secretRevealAnim",
-                    modifier = Modifier.fillMaxSize()
-                ) { revealed ->
-                    if (!revealed) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(20.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (!isRevealed) {
                         Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(20.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(68.dp)
-                                    .clip(CircleShape)
-                                    .background(DarkSurfaceVariant)
-                                    .border(1.5.dp, DzEmeraldGlow, CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Lock,
-                                    contentDescription = null,
-                                    tint = DzEmeraldGlow,
-                                    modifier = Modifier.size(36.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Icon(
+                                imageVector = Icons.Default.Visibility,
+                                contentDescription = null,
+                                tint = DzGold,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
                             Text(
-                                text = "اضغط لكشف الكلمة 👁️",
-                                fontSize = 20.sp,
+                                text = AppStrings.tapToReveal(lang),
+                                fontSize = 17.sp,
                                 fontWeight = FontWeight.Black,
                                 color = Color.White
                             )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = "تأكد بلي صحابك ما راهمش يشوفوا فالشاشة",
-                                fontSize = 13.sp,
-                                color = TextSecondary,
-                                textAlign = TextAlign.Center
-                            )
                         }
                     } else {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(20.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
+                        AnimatedVisibility(
+                            visible = true,
+                            enter = fadeIn()
                         ) {
-                            if (word != null) {
-                                // Category Pill
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
                                 Row(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .background(DarkSurfaceVariant)
-                                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(word.category.icon, fontSize = 14.sp, modifier = Modifier.padding(end = 6.dp))
-                                    Text(
-                                        text = word.category.displayName,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = DzGoldLight
-                                    )
+                                    Badge(containerColor = DarkSurfaceVariant) {
+                                        Text(
+                                            text = "${activeWord?.category?.icon ?: ""} ${AppStrings.categoryName(activeWord?.category ?: com.example.data.model.Category.DZ, lang)}",
+                                            color = DzGoldLight,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                        )
+                                    }
+
+                                    Badge(
+                                        containerColor = if (activeWord?.difficulty == Difficulty.HARD) DzRedDark else DzGreenDark
+                                    ) {
+                                        Text(
+                                            text = if (activeWord?.difficulty == Difficulty.HARD) (if (lang == AppLanguage.ENGLISH) "🔴 Hard (+100)" else "🔴 صعيب (+100)") else (if (lang == AppLanguage.ENGLISH) "🟢 Easy (+50)" else "🟢 سهل (+50)"),
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Black,
+                                            fontSize = 12.sp,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                        )
+                                    }
                                 }
-
-                                Spacer(modifier = Modifier.height(14.dp))
-
-                                // Word text
-                                Text(
-                                    text = word.text,
-                                    fontSize = 32.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = Color.White,
-                                    textAlign = TextAlign.Center,
-                                    lineHeight = 38.sp
-                                )
 
                                 Spacer(modifier = Modifier.height(16.dp))
 
-                                // Points & Difficulty
-                                DinarBadge(
-                                    points = if (word.difficulty == Difficulty.HARD) 100 else 50,
-                                    isLarge = true
+                                Text(
+                                    text = activeWord?.text ?: "",
+                                    fontSize = 32.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color.White,
+                                    textAlign = TextAlign.Center
                                 )
                             }
                         }
                     }
                 }
             }
+        }
 
-            // Advice note
-            Text(
-                text = "💡 بعد ما تحفظ الكلمة، اضغط على الزر بالأسفل وسلم الهاتف للحاكم باش يبدأ التوقيت فوراً.",
-                fontSize = 12.sp,
-                color = TextMuted,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
+        // Action: Start Frenzy
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Button(
+                onClick = { viewModel.startActiveTurn() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(64.dp)
+                    .testTag("btn_start_after_reveal"),
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = DzGreen),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(30.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = AppStrings.startFrenzyBtn(lang),
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White
+                    )
+                }
+            }
+
+            CreatorCreditFooter()
         }
     }
 }

@@ -3,8 +3,10 @@ package com.example.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Visibility
@@ -15,13 +17,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.engine.GameViewModel
-import com.example.ui.components.ArfiTopBar
+import com.example.i18n.AppStrings
+import com.example.ui.components.CreatorCreditFooter
 import com.example.ui.components.GlassCard
 import com.example.ui.components.atmosphericBackground
 import com.example.ui.theme.*
@@ -32,233 +37,237 @@ fun TurnIntroScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val team = uiState.activeTeam
-    val actor = uiState.activeRepresentative
-    val judge = uiState.activeJudge
-    val teamColor = team?.let { Color(it.colorHex) } ?: DzGreen
+    val activeTeam = uiState.activeTeam
+    val activeRep = uiState.activeRepresentative
+    val activeJudge = uiState.activeJudge
+    val teamColor = Color(activeTeam?.colorHex ?: 0xFFE63946)
+    val lang = uiState.settings.appLanguage
+    val scrollState = rememberScrollState()
 
-    Scaffold(
-        topBar = {
-            ArfiTopBar(
-                title = "🎭 بداية دور جديد",
-                onBack = { viewModel.requestExitConfirmation(true) },
-                sfxEnabled = uiState.settings.sfxEnabled,
-                musicEnabled = uiState.settings.musicEnabled,
-                onToggleSfx = { viewModel.updateSettings(uiState.settings.copy(sfxEnabled = !uiState.settings.sfxEnabled)) },
-                onToggleMusic = { viewModel.updateSettings(uiState.settings.copy(musicEnabled = !uiState.settings.musicEnabled)) }
-            )
-        },
-        bottomBar = {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .atmosphericBackground()
+            .verticalScroll(scrollState)
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Turn Header Badge
             Surface(
-                color = DarkSurface.copy(alpha = 0.95f),
-                tonalElevation = 8.dp,
-                modifier = Modifier.navigationBarsPadding()
+                color = teamColor.copy(alpha = 0.2f),
+                shape = RoundedCornerShape(16.dp),
+                border = ButtonDefaults.outlinedButtonBorder.copy(
+                    brush = Brush.horizontalGradient(listOf(teamColor, teamColor.copy(alpha = 0.5f)))
+                ),
+                modifier = Modifier.padding(top = 10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(activeTeam?.emoji ?: "🔴", fontSize = 18.sp, modifier = Modifier.padding(end = 6.dp))
+                    Text(
+                        text = AppStrings.turnOf(lang, activeTeam?.name ?: ""),
+                        color = Color.White,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 15.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Massive Team & Role Showcase Card
+            GlassCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(26.dp),
+                borderColor = teamColor.copy(alpha = 0.8f),
+                borderWidth = 2.dp
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Primary Grand Action: Launch continuous frenzy round!
-                    Button(
-                        onClick = { viewModel.startFrenzyRoundDirectly() },
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(64.dp)
-                            .testTag("start_frenzy_round_btn"),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = DzEmeraldGlow)
+                            .size(72.dp)
+                            .clip(CircleShape)
+                            .background(teamColor.copy(alpha = 0.25f))
+                            .border(2.dp, teamColor, CircleShape),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = null,
-                            tint = Color.Black,
-                            modifier = Modifier.size(28.dp)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = "🔥 انطلق! (ابدأ العداد وتتابع الكلمات)",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color.Black
-                        )
+                        Text(activeTeam?.emoji ?: "🔴", fontSize = 36.sp)
                     }
 
-                    // Secondary option for private reveal if preferred
-                    OutlinedButton(
-                        onClick = { viewModel.prepareTurnReveal() },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp)
-                            .testTag("reveal_secret_btn"),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = DzGoldLight)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Visibility,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "🔒 كشف سري مسبق للممثل فقط",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-        },
-        containerColor = Color.Transparent
-    ) { innerPadding ->
-        Column(
-            modifier = modifier
-                .fillMaxSize()
-                .atmosphericBackground()
-                .padding(innerPadding)
-                .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            // Team Header
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(76.dp)
-                        .clip(CircleShape)
-                        .background(teamColor.copy(alpha = 0.25f))
-                        .border(3.dp, teamColor, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(team?.emoji ?: "🔴", fontSize = 36.sp)
-                }
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = activeTeam?.name ?: "",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 26.sp,
+                        color = Color.White
+                    )
 
-                Text(
-                    text = "دور ${team?.name ?: "الفريق"}",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color.White
-                )
+                    Text(
+                        text = AppStrings.currentTeamScore(lang, activeTeam?.score ?: 0),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = DzGoldLight
+                    )
 
-                Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Divider(color = Color(0x20FFFFFF))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                Text(
-                    text = "رصيد الفريق الحالي: ${team?.score ?: 0} دج",
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = DzGoldLight
-                )
-            }
-
-            // Role Assignments Card
-            GlassCard(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(22.dp),
-                borderColor = Color(0x3500E676)
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    // Actor Role Box
+                    // Actor spotlight
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(16.dp))
                             .background(DarkSurfaceVariant)
-                            .border(1.5.dp, DzEmeraldGlow.copy(alpha = 0.6f), RoundedCornerShape(16.dp))
+                            .border(1.dp, DzEmeraldGlow.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
                             .padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .clip(CircleShape)
-                                .background(DzGreenDark),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("🎭", fontSize = 22.sp)
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text("الممثل فهاد الدور:", fontSize = 12.sp, color = TextSecondary)
                             Text(
-                                text = actor?.name ?: "—",
+                                text = AppStrings.actorRoleLabel(lang),
+                                fontSize = 12.sp,
+                                color = TextSecondary
+                            )
+                            Text(
+                                text = activeRep?.name ?: "اللاعب",
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Black,
                                 color = DzEmeraldGlow
                             )
                         }
+                        Text("🎭", fontSize = 28.sp)
                     }
 
-                    // Judge Role Box
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Judge / Phone holder spotlight
+                    // REQUIREMENT 1: TEXT ONLY - الحاكم وماسك الهاتف (اختياري): / Judge & Phone Holder (Optional):
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(16.dp))
                             .background(DarkSurfaceVariant)
-                            .border(1.5.dp, DzGold.copy(alpha = 0.6f), RoundedCornerShape(16.dp))
+                            .border(1.dp, DzGold.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
                             .padding(14.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(44.dp)
-                                .clip(CircleShape)
-                                .background(DzGoldDark.copy(alpha = 0.4f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("📱", fontSize = 22.sp)
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text("الحاكم وماسك الهاتف:", fontSize = 12.sp, color = TextSecondary)
                             Text(
-                                text = judge?.name ?: "الجميع",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Black,
+                                text = AppStrings.judgeRoleLabel(lang),
+                                fontSize = 12.sp,
+                                color = TextSecondary
+                            )
+                            Text(
+                                text = activeJudge?.name ?: activeRep?.name ?: "اللاعب",
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold,
                                 color = DzGoldLight
                             )
                         }
+                        Text("📱", fontSize = 24.sp)
                     }
                 }
             }
 
-            // Speed Frenzy Rule Card
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Speed Frenzy Rule Notice
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                borderColor = Color(0x30FFB703),
-                containerColor = DarkSurface.copy(alpha = 0.6f)
+                shape = RoundedCornerShape(18.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(14.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("⚡", fontSize = 18.sp, modifier = Modifier.padding(end = 6.dp))
-                        Text(
-                            text = "نظام التحدي السريع المتتابع:",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Black,
-                            color = DzGoldLight
-                        )
-                    }
                     Text(
-                        text = "• عند بدأ العداد تخرج الكلمات متتالية واحدة تلو الأخرى!\n• مثل أكبر عدد من الكلمات قبل انتهاء الوقت ⏱️\n• صح = +50/+100 دج | تخطي = -20 دج 💸",
+                        text = AppStrings.speedRulesHeader(lang),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                        color = DzGold
+                    )
+                    Text(
+                        text = AppStrings.speedRulesBody(lang),
                         fontSize = 12.sp,
                         color = TextSecondary,
                         lineHeight = 18.sp
                     )
                 }
             }
+        }
+
+        // Action Buttons
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Main direct start: Go immediately
+            Button(
+                onClick = { viewModel.startActiveTurn() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(64.dp)
+                    .testTag("btn_start_active_turn"),
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = DzGreen),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(30.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = AppStrings.startFrenzyBtn(lang),
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White
+                    )
+                }
+            }
+
+            // Secret private reveal option
+            OutlinedButton(
+                onClick = { viewModel.prepareTurnReveal() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+                    .testTag("btn_private_reveal"),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                border = ButtonDefaults.outlinedButtonBorder.copy(
+                    brush = Brush.horizontalGradient(listOf(DzGold, DzGoldDark))
+                )
+            ) {
+                Icon(Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(18.dp), tint = DzGoldLight)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = AppStrings.secretRevealBtn(lang),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = DzGoldLight
+                )
+            }
+
+            CreatorCreditFooter()
         }
     }
 }

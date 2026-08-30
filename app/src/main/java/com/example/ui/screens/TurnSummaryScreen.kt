@@ -4,9 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -18,12 +19,13 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.model.AppLanguage
 import com.example.data.model.ResolutionType
 import com.example.engine.GameViewModel
-import com.example.ui.components.ArfiTopBar
+import com.example.i18n.AppStrings
+import com.example.ui.components.CreatorCreditFooter
 import com.example.ui.components.GlassCard
 import com.example.ui.components.atmosphericBackground
 import com.example.ui.theme.*
@@ -34,44 +36,44 @@ fun TurnSummaryScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val turnHistory = uiState.turnWordHistory
     val nextTeam = uiState.activeTeam
-    val turnResults = uiState.turnWordHistory
-    val turnPoints = turnResults.sumOf { it.pointsDelta }
+    val lang = uiState.settings.appLanguage
+
+    val turnPoints = turnHistory.sumOf { it.pointsDelta }
+    val correctCount = turnHistory.count { it.type == ResolutionType.CORRECT }
+    val skipCount = turnHistory.count { it.type == ResolutionType.SKIP }
+    val badCount = turnHistory.count { it.type == ResolutionType.BAD_PERFORMANCE }
 
     Scaffold(
-        topBar = {
-            ArfiTopBar(
-                title = "⏳ نهاية الدور",
-                onBack = { viewModel.requestExitConfirmation(true) }
-            )
-        },
         bottomBar = {
             Surface(
-                color = DarkSurface.copy(alpha = 0.95f),
-                tonalElevation = 8.dp,
-                modifier = Modifier.navigationBarsPadding()
+                color = DarkBackground.copy(alpha = 0.95f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+                Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
                     Button(
                         onClick = { viewModel.proceedToNextTeamTurnIntro() },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(64.dp)
-                            .testTag("next_team_turn_btn"),
+                            .height(60.dp)
+                            .testTag("btn_next_turn"),
                         shape = RoundedCornerShape(20.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = DzEmeraldGlow)
+                        colors = ButtonDefaults.buttonColors(containerColor = DzGreen),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
                     ) {
-                        Text(
-                            text = "الدور التالي (${nextTeam?.name ?: "الفريق"}) ➡️",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color.Black
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(26.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = AppStrings.nextTeamTurn(lang, nextTeam?.name ?: ""),
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color.White
+                            )
+                        }
                     }
                 }
             }
@@ -87,13 +89,12 @@ fun TurnSummaryScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp),
             contentPadding = PaddingValues(top = 16.dp, bottom = 20.dp)
         ) {
-            // Turn Banner
+            // Turn Finish Header Card
             item {
                 GlassCard(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(22.dp),
-                    borderColor = if (turnPoints >= 0) Color(0x4000E676) else Color(0x40FF3D71),
-                    containerColor = DarkCard
+                    shape = RoundedCornerShape(24.dp),
+                    borderColor = if (turnPoints >= 0) DzEmeraldGlow.copy(alpha = 0.6f) else DzRed.copy(alpha = 0.6f)
                 ) {
                     Column(
                         modifier = Modifier
@@ -102,81 +103,82 @@ fun TurnSummaryScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "🔔 خلاص وقت الدور!",
-                            fontSize = 24.sp,
+                            text = AppStrings.turnSummaryTitle(lang),
+                            fontSize = 22.sp,
                             fontWeight = FontWeight.Black,
                             color = Color.White
                         )
+
                         Spacer(modifier = Modifier.height(8.dp))
+
                         Text(
-                            text = if (turnPoints >= 0) "+$turnPoints دج فهاد الدور 🔥" else "$turnPoints دج 💀",
+                            text = if (turnPoints >= 0) AppStrings.turnPointsGained(lang, turnPoints) else AppStrings.turnPointsLost(lang, turnPoints),
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Black,
                             color = if (turnPoints >= 0) DzEmeraldGlow else DzRed
                         )
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // Stats capsules
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            ScoreMiniBadge("✅ ${if (lang == AppLanguage.ENGLISH) "Correct" else "صح"}: $correctCount", DzGreenDark, Modifier.weight(1f))
+                            ScoreMiniBadge("⏭️ ${if (lang == AppLanguage.ENGLISH) "Skip" else "تخطي"}: $skipCount", DarkSurfaceVariant, Modifier.weight(1f))
+                            ScoreMiniBadge("❌ ${if (lang == AppLanguage.ENGLISH) "Penalty" else "عقوبة"}: $badCount", DzRedDark, Modifier.weight(1f))
+                        }
                     }
                 }
             }
 
-            // Standings Overview
-            item {
-                Text(
-                    text = "📊 ترتيب الفرق الحالي:",
-                    fontWeight = FontWeight.Black,
-                    fontSize = 16.sp,
-                    color = DzGoldLight
-                )
-            }
-
+            // Current Leaderboard Standings
             item {
                 GlassCard(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    borderColor = Color(0x30FFFFFF)
+                    shape = RoundedCornerShape(20.dp)
                 ) {
-                    Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = AppStrings.currentStandings(lang),
+                            fontWeight = FontWeight.Black,
+                            fontSize = 15.sp,
+                            color = DzGoldLight
+                        )
                         uiState.teams.sortedByDescending { it.score }.forEachIndexed { idx, team ->
                             val teamColor = Color(team.colorHex)
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(DarkSurfaceVariant.copy(alpha = 0.6f))
-                                    .padding(12.dp),
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(DarkSurfaceVariant)
+                                    .padding(10.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = "${idx + 1}.",
-                                        fontWeight = FontWeight.Black,
-                                        fontSize = 16.sp,
-                                        color = DzGold,
-                                        modifier = Modifier.padding(end = 8.dp)
-                                    )
+                                    Text("${idx + 1}.", fontWeight = FontWeight.Bold, color = TextSecondary, modifier = Modifier.padding(end = 8.dp))
                                     Box(
                                         modifier = Modifier
                                             .size(28.dp)
                                             .clip(CircleShape)
                                             .background(teamColor.copy(alpha = 0.3f))
-                                            .border(1.5.dp, teamColor, CircleShape),
+                                            .border(1.dp, teamColor, CircleShape),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Text(team.emoji, fontSize = 13.sp)
+                                        Text(team.emoji, fontSize = 14.sp)
                                     }
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Text(
-                                        text = team.name,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 15.sp,
-                                        color = Color.White
-                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(team.name, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 14.sp)
                                 }
-
                                 Text(
-                                    text = "${team.score} دج",
+                                    text = "${team.score} ${AppStrings.currencyUnit(lang)}",
                                     fontWeight = FontWeight.Black,
-                                    fontSize = 16.sp,
+                                    fontSize = 15.sp,
                                     color = DzGoldLight
                                 )
                             }
@@ -185,69 +187,76 @@ fun TurnSummaryScreen(
                 }
             }
 
-            // Words played in this turn
-            if (turnResults.isNotEmpty()) {
+            // Words played during this turn
+            if (turnHistory.isNotEmpty()) {
                 item {
-                    Text(
-                        text = "📝 كلمات هذا الدور:",
-                        fontWeight = FontWeight.Black,
-                        fontSize = 16.sp,
-                        color = Color.White
-                    )
-                }
-
-                items(turnResults) { res ->
                     GlassCard(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
-                        borderColor = Color(0x20FFFFFF)
+                        shape = RoundedCornerShape(20.dp)
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Column {
-                                Text(
-                                    text = res.word.text,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 15.sp,
-                                    color = Color.White
-                                )
-                                Text(
-                                    text = "${res.word.category.displayName} • ${if (res.word.difficulty.name == "HARD") "صعيب" else "سهل"}",
-                                    fontSize = 12.sp,
-                                    color = TextSecondary
-                                )
-                            }
-
-                            val badgeColor = when (res.type) {
-                                ResolutionType.CORRECT -> DzGreen
-                                ResolutionType.SKIP -> DzGoldDark
-                                ResolutionType.BAD_PERFORMANCE -> DzRed
-                            }
-
-                            val badgeText = when (res.type) {
-                                ResolutionType.CORRECT -> "+${res.pointsDelta} دج ✅"
-                                ResolutionType.SKIP -> "${res.pointsDelta} دج ⏭️"
-                                ResolutionType.BAD_PERFORMANCE -> "${res.pointsDelta} دج ❌"
-                            }
-
-                            Badge(containerColor = badgeColor) {
-                                Text(
-                                    text = badgeText,
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                )
+                            Text(
+                                text = AppStrings.turnWordsList(lang),
+                                fontWeight = FontWeight.Black,
+                                fontSize = 15.sp,
+                                color = DzGoldLight
+                            )
+                            turnHistory.forEach { item ->
+                                val outcomeColor = when (item.type) {
+                                    ResolutionType.CORRECT -> DzEmeraldGlow
+                                    ResolutionType.SKIP -> DzGold
+                                    ResolutionType.BAD_PERFORMANCE -> DzRed
+                                }
+                                val outcomeIcon = when (item.type) {
+                                    ResolutionType.CORRECT -> "✅"
+                                    ResolutionType.SKIP -> "⏭️"
+                                    ResolutionType.BAD_PERFORMANCE -> "❌"
+                                }
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(DarkSurfaceVariant)
+                                        .padding(10.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(outcomeIcon, fontSize = 16.sp, modifier = Modifier.padding(end = 8.dp))
+                                        Text(item.word.text, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 14.sp)
+                                    }
+                                    Text(
+                                        text = if (item.pointsDelta > 0) "+${item.pointsDelta}" else "${item.pointsDelta}",
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 14.sp,
+                                        color = outcomeColor
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
+
+            item {
+                CreatorCreditFooter()
+            }
         }
+    }
+}
+
+@Composable
+private fun ScoreMiniBadge(text: String, color: Color, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(color)
+            .padding(vertical = 8.dp, horizontal = 4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
     }
 }

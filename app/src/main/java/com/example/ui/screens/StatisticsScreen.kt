@@ -7,19 +7,18 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.model.AppLanguage
 import com.example.data.model.GameScreen
 import com.example.engine.GameViewModel
+import com.example.i18n.AppStrings
 import com.example.ui.components.ArfiTopBar
 import com.example.ui.components.CreatorCreditFooter
 import com.example.ui.components.GlassCard
@@ -31,20 +30,15 @@ fun StatisticsScreen(
     viewModel: GameViewModel,
     modifier: Modifier = Modifier
 ) {
-    val stats = viewModel.calculateStatistics()
+    val stats = remember { viewModel.calculateStatistics() }
     val uiState by viewModel.uiState.collectAsState()
+    val lang = uiState.settings.appLanguage
 
     Scaffold(
         topBar = {
             ArfiTopBar(
-                title = "🏆 إحصائيات القعدة",
-                onBack = {
-                    if (uiState.winningTeam != null) {
-                        viewModel.navigateTo(GameScreen.VICTORY)
-                    } else {
-                        viewModel.navigateTo(GameScreen.HOME)
-                    }
-                }
+                title = AppStrings.statsScreenTitle(lang),
+                onBack = { viewModel.navigateTo(GameScreen.HOME) }
             )
         },
         containerColor = Color.Transparent
@@ -56,119 +50,123 @@ fun StatisticsScreen(
                 .padding(innerPadding)
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
-            contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp)
+            contentPadding = PaddingValues(top = 10.dp, bottom = 24.dp)
         ) {
-            // Header summary
+            // Best Actor Spotlight
+            stats.bestActorPlayer?.let { player ->
+                item {
+                    AwardCard(
+                        emoji = "🎭",
+                        title = AppStrings.topActorAward(lang),
+                        playerName = player.name,
+                        detail = "${player.correctGuesses} ${if (lang == AppLanguage.ENGLISH) "correct words" else "كلمة صحيحة"}",
+                        accentColor = DzEmeraldGlow
+                    )
+                }
+            }
+
+            // Skip Champion Spotlight
+            stats.mostSkipsPlayer?.let { player ->
+                if (player.skips > 0) {
+                    item {
+                        AwardCard(
+                            emoji = "⏭️",
+                            title = AppStrings.skipChampAward(lang),
+                            playerName = player.name,
+                            detail = "${player.skips} ${if (lang == AppLanguage.ENGLISH) "skips" else "تخطي"}",
+                            accentColor = DzGold
+                        )
+                    }
+                }
+            }
+
+            // Bad Acting Penalty Spotlight
+            stats.mostBadActorPlayer?.let { player ->
+                if (player.badPerformances > 0) {
+                    item {
+                        AwardCard(
+                            emoji = "❌",
+                            title = AppStrings.badActorAward(lang),
+                            playerName = player.name,
+                            detail = "${player.badPerformances} ${if (lang == AppLanguage.ENGLISH) "penalties" else "أخطاء"}",
+                            accentColor = DzRed
+                        )
+                    }
+                }
+            }
+
+            // High-Level Numbers Overview
             item {
                 GlassCard(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(22.dp),
-                    borderColor = Color(0x40FFB703),
-                    containerColor = DarkCard
+                    shape = RoundedCornerShape(20.dp)
                 ) {
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(18.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Text(
-                            text = "📊 ملخص أرقام المباراة",
-                            fontSize = 20.sp,
+                            text = AppStrings.matchSummaryHeader(lang),
                             fontWeight = FontWeight.Black,
-                            color = Color.White
+                            fontSize = 16.sp,
+                            color = DzGoldLight
                         )
-                        Spacer(modifier = Modifier.height(14.dp))
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceAround
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("${stats.totalWordsPlayed}", fontSize = 24.sp, fontWeight = FontWeight.Black, color = Color.White)
-                                Text("ملعوبة", fontSize = 12.sp, color = TextSecondary)
-                            }
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("${stats.totalCorrectWords}", fontSize = 24.sp, fontWeight = FontWeight.Black, color = DzEmeraldGlow)
-                                Text("صحيحة", fontSize = 12.sp, color = TextSecondary)
-                            }
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("${stats.totalSkips}", fontSize = 24.sp, fontWeight = FontWeight.Black, color = DzGold)
-                                Text("تخطي", fontSize = 12.sp, color = TextSecondary)
-                            }
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("${stats.totalBadPerformances}", fontSize = 24.sp, fontWeight = FontWeight.Black, color = DzRed)
-                                Text("عقوبات", fontSize = 12.sp, color = TextSecondary)
-                            }
+                            Text(AppStrings.totalPlayedWords(lang), color = TextSecondary, fontSize = 13.sp)
+                            Text("${stats.totalWordsPlayed}", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(AppStrings.correctWords(lang), color = TextSecondary, fontSize = 13.sp)
+                            Text("${stats.totalCorrectWords}", color = DzEmeraldGlow, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(AppStrings.totalSkips(lang), color = TextSecondary, fontSize = 13.sp)
+                            Text("${stats.totalSkips}", color = DzGold, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(AppStrings.totalPenalties(lang), color = TextSecondary, fontSize = 13.sp)
+                            Text("${stats.totalBadPerformances}", color = DzRed, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(AppStrings.totalDuration(lang), color = TextSecondary, fontSize = 13.sp)
+                            Text("${stats.totalMatchDurationSeconds} ${AppStrings.secondsUnit(lang)}", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                         }
                     }
                 }
             }
 
-            // Hall of Fame & Funny Awards
-            item {
-                Text(
-                    text = "🌟 جوائز وشرف القعدة:",
-                    fontWeight = FontWeight.Black,
-                    fontSize = 17.sp,
-                    color = DzGoldLight
-                )
-            }
-
-            // Top Scorer
-            item {
-                AwardCard(
-                    emoji = "👑",
-                    title = "أكثر لاعب حصد نقاطاً (الهدّاف)",
-                    playerName = stats.topScoringPlayer?.name ?: "—",
-                    detail = "${stats.topScoringPlayer?.score ?: 0} دج",
-                    accentColor = DzGold
-                )
-            }
-
-            // Best Actor
-            item {
-                AwardCard(
-                    emoji = "🎭",
-                    title = "أفضل ممثل فالماتش (شابلن القعدة)",
-                    playerName = stats.bestActorPlayer?.name ?: "—",
-                    detail = "${stats.bestActorPlayer?.correctGuesses ?: 0} صحيحة",
-                    accentColor = DzEmeraldGlow
-                )
-            }
-
-            // Most Skips
-            item {
-                AwardCard(
-                    emoji = "⏭️",
-                    title = "ملك التخطي (ماتكسرش راسك)",
-                    playerName = stats.mostSkipsPlayer?.name ?: "—",
-                    detail = "${stats.mostSkipsPlayer?.skips ?: 0} تخطي",
-                    accentColor = DzGoldDark
-                )
-            }
-
-            // Disaster Actor
-            item {
-                AwardCard(
-                    emoji = "🤡",
-                    title = "كارثة التمثيل (لم يمثل جيداً)",
-                    playerName = stats.mostBadActorPlayer?.name ?: "—",
-                    detail = "${stats.mostBadActorPlayer?.badPerformances ?: 0} عقوبات",
-                    accentColor = DzRed
-                )
-            }
-
-            // Team rankings detail
+            // Player breakdown per team
             item {
                 GlassCard(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    borderColor = Color(0x30FFFFFF)
+                    shape = RoundedCornerShape(20.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
                         Text(
-                            text = "👥 تفاصيل الفرق واللاعبين:",
+                            text = AppStrings.playersRankings(lang),
                             fontWeight = FontWeight.Black,
                             fontSize = 16.sp,
                             color = Color.White
@@ -187,7 +185,7 @@ fun StatisticsScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text("${team.emoji} ${team.name}", fontWeight = FontWeight.Bold, color = Color.White)
-                                    Text("${team.score} دج", fontWeight = FontWeight.Black, color = DzGoldLight)
+                                    Text("${team.score} ${AppStrings.currencyUnit(lang)}", fontWeight = FontWeight.Black, color = DzGoldLight)
                                 }
 
                                 Spacer(modifier = Modifier.height(6.dp))
@@ -201,7 +199,7 @@ fun StatisticsScreen(
                                     ) {
                                         Text("• ${p.name}", fontSize = 13.sp, color = TextSecondary)
                                         Text(
-                                            "${p.score} دج (${p.correctGuesses} صح، ${p.skips} تخطي)",
+                                            "${p.score} ${AppStrings.currencyUnit(lang)} (${p.correctGuesses} ${if (lang == AppLanguage.ENGLISH) "correct" else "صح"}، ${p.skips} ${if (lang == AppLanguage.ENGLISH) "skips" else "تخطي"})",
                                             fontSize = 12.sp,
                                             color = TextMuted
                                         )
@@ -232,7 +230,7 @@ fun StatisticsScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "📜 سجل المباريات السابقة (${matchHistory.size})",
+                                    text = AppStrings.savedMatchesHistory(lang, matchHistory.size),
                                     fontWeight = FontWeight.Black,
                                     fontSize = 16.sp,
                                     color = DzGoldLight
@@ -240,7 +238,7 @@ fun StatisticsScreen(
                                 TextButton(
                                     onClick = { viewModel.clearSavedMatchHistory() }
                                 ) {
-                                    Text("مسح السجل", color = DzRed, fontSize = 12.sp)
+                                    Text(AppStrings.clearHistoryBtn(lang), color = DzRed, fontSize = 12.sp)
                                 }
                             }
 
@@ -258,30 +256,27 @@ fun StatisticsScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = "🏆 الفائز: ${match.winnerTeamEmoji} ${match.winnerTeamName}",
+                                            text = "🏆 ${if (lang == AppLanguage.ENGLISH) "Winner:" else "الفائز:"} ${match.winnerTeamEmoji} ${match.winnerTeamName}",
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 14.sp,
                                             color = Color.White
                                         )
                                         Text(
-                                            text = "${match.winnerScore} دج",
+                                            text = "${match.winnerScore} ${AppStrings.currencyUnit(lang)}",
                                             fontWeight = FontWeight.Black,
                                             fontSize = 14.sp,
                                             color = DzEmeraldGlow
                                         )
                                     }
-
                                     Spacer(modifier = Modifier.height(4.dp))
-
-                                    val teamsSummary = match.teamScores.joinToString(" | ") { "${it.emoji} ${it.teamName}: ${it.score}دج" }
+                                    val teamsSummary = match.teamScores.joinToString(" | ") { "${it.emoji} ${it.teamName}: ${it.score}${AppStrings.currencyUnit(lang)}" }
                                     Text(
                                         text = teamsSummary,
                                         fontSize = 12.sp,
                                         color = TextSecondary
                                     )
-
                                     Text(
-                                        text = "⏱️ المدة: ${match.durationSeconds}ث | 📝 كلمات صحيحة: ${match.correctWordsCount}/${match.totalWordsPlayed}",
+                                        text = "⏱️ ${if (lang == AppLanguage.ENGLISH) "Duration:" else "المدة:"} ${match.durationSeconds}s | 📝 ${if (lang == AppLanguage.ENGLISH) "Correct:" else "كلمات صحيحة:"} ${match.correctWordsCount}/${match.totalWordsPlayed}",
                                         fontSize = 11.sp,
                                         color = TextMuted
                                     )
