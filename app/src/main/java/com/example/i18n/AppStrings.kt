@@ -2,75 +2,45 @@ package com.example.i18n
 
 import com.example.data.model.AppLanguage
 import com.example.data.model.Category
-import com.example.data.model.Difficulty
-import com.example.data.model.ResolutionType
 
+/**
+ * Centralized Bilingual Localization Engine (Arabic & English)
+ * Ensures consistent UI copy, strict phrasing adherence, and complete language coverage.
+ */
 object AppStrings {
-    // --- Brand & App ---
-    fun appTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "ARFI CHAPLEN" else "عرفي شابلن"
-    fun appSubtitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Algerian Charades Party Game 🇩🇿" else "عرفي شابلن الجزائري 🇩🇿"
-    fun heroSlogan(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "The Ultimate Algerian Charades & Acting Party Game 🇩🇿🔥" else "لعبة التمثيل والضحك الجزائري في القعدات 🇩🇿🔥"
-    fun creatorStoryHeader(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Created with love for gatherings 🇩🇿" else "صُنعت بكل حب للقعدات الجزائرية 🇩🇿"
-
-    // --- Metric Capsules ---
-    fun wordsCountTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "1600+ Words" else "1600+ كلمة"
-    fun wordsCountSubtitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Algerian Dictionary" else "قاموس جزائري"
-    fun languageToggleTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "English ↔ العربية" else "العربية ↔ English"
-    fun languageToggleSubtitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Tap to switch" else "اضغط لتغيير اللغة"
-    fun categoriesCapsuleTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "8 Categories" else "8 فئات"
-    fun categoriesCapsuleSubtitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Diverse & Fun" else "متنوعة ومضحكة"
 
     // --- Home Screen ---
-    fun startNewMatch(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "🔥 Start New Match" else "🔥 ابدأ ماتش جديد"
-    fun wordBankTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "📚 Words Bank" else "📚 بنك الكلمات"
-    fun wordBankSubtitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Add custom words & local jokes" else "أضف كلمات قعدتكم ونكتكم الخاصة"
-    fun statsTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "🏆 Stats & Awards" else "🏆 إحصائيات وجوائز"
-    fun statsSubtitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Top actors & match highlights" else "أفضل ممثل وكوارث القعدة"
-    fun rulesTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "ℹ️ Game Rules & Story" else "ℹ️ قوانين اللعبة وحكاية صنعها"
-    fun rulesSubtitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "How to play fair rotation & memes" else "كيفاش تلعبوا بالتناوب العادل والميمز"
+    fun appTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "ARFI CHAPLEN" else "عارفينك شارلي شابلن"
+    fun appSubtitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "The Algerian Charades & Acting Party Game" else "لعبة التمثيل والشاراد الجزائرية الكبرى"
+    fun offlineBadge(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "100% Offline" else "أوفلاين 100%"
+    fun playButton(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Start Tournament 🎭" else "ابدأ المنافسة 🎭"
+    fun settingsButton(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Categories & Timer ⚙️" else "الفئات والوقت ⚙️"
+    fun customWordsButton(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Custom Words Bank 📚" else "بنك الكلمات المخصصة 📚"
+    fun statsButton(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Statistics & Hall of Fame 🏆" else "الإحصائيات وسجل المباريات 🏆"
+    fun quickMatch(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Quick Match" else "ماتش سريع"
+    fun quickMatchSubtitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Start immediately with 2 default teams" else "ابدأ فوراً بفريقين جاهزين وإعدادات قياسية"
+    fun tournament(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Tournament Setup" else "تهيئة الفرق والمباراة"
+    fun tournamentSubtitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Configure 2 to 4 custom teams & players" else "خصص 2 إلى 4 فرق وأسماء اللاعبين"
+    fun rulesTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Rules & Origin Story" else "قواعد اللعبة وقصة الصنع"
+    fun rulesSubtitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Origin story & fair play guidelines" else "حكاية صنع اللعبة وكيفية التناوب العادل"
+    fun creatorHeader(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Created by Younes Chekour 🗿" else "صُنعت بواسطة يونس الشكور 🗿"
+    fun creatorStoryHeader(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Created by Younes Chekour 🗿" else "فكرة وتطوير: يونس الشكور 🗿"
 
     // --- Team Setup Screen ---
-    fun teamSetupTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "👥 Teams & Players Setup" else "👥 تشكيلة الفرق واللاعبين"
-    fun teamCountLabel(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Number of Teams:" else "عدد الفرق:"
-    fun twoTeams(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "2 Teams" else "فريقين"
-    fun threeTeams(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "3 Teams" else "3 فرق"
-    fun fourTeams(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "4 Teams" else "4 فرق"
-    fun roleActorTag(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) " (Actor)" else " (الممثل)"
-    fun roleJudgeTag(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) " (Judge)" else " (الحاكم)"
-    fun addPlayerToTeam(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Add Player to this Team" else "إضافة لاعب لهذا الفريق"
-    fun continueToCategories(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Continue to Categories ➡️" else "المواصلة لاختيار الفئات ➡️"
-    fun minPlayerWarning(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "At least 1 player required per team" else "يلزم لاعب واحد على الأقل في كل فريق"
-    fun editTeamNameDialogTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Edit Team Name" else "تعديل اسم الفريق"
-    fun editPlayerNameDialogTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Edit Player Name" else "تعديل اسم اللاعب"
-    fun addNewPlayerDialogTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Add New Player" else "إضافة لاعب جديد"
-    fun teamNameField(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Team Name" else "اسم الفريق"
-    fun playerNameField(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Player Name" else "اسم اللاعب"
-    fun saveBtn(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Save" else "حفظ"
-    fun cancelBtn(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Cancel" else "إلغاء"
-    fun addBtn(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Add" else "إضافة"
-
-    // --- Category & Match Settings ---
-    fun settingsTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "⚙️ Match Settings & Categories" else "⚙️ إعدادات الماتش والفئات"
-    fun turnDurationLabel(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "⏱️ Turn Duration:" else "⏱️ وقت الدور:"
-    fun secondsUnit(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "sec" else "ثانية"
-    fun winningScoreLabel(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "🏆 Winning Score Target:" else "🏆 نقاط الفوز للبطولة:"
-    fun currencyUnit(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "pts" else "دج"
-    fun randomEventsLabel(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "🎲 Sudden Meme Events:" else "🎲 الأحداث الكوميدية المفاجئة:"
-    fun sfxLabel(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "🔊 Sound Effects & Hype" else "🔊 صوت التأثيرات والحماس"
-    fun sfxSubtitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Bells, timers, victory sounds" else "جرس، عداد، وصوت الربحة"
-    fun musicLabel(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "🎵 Background Algerian Music" else "🎵 الموسيقى الجزائرية في الخلفية"
-    fun musicSubtitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Raï, Chaabi, Gnawa vibes" else "راي، شعبي، وقناوي حماسي"
-    fun availableCategoriesLabel(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "🎭 Word Categories:" else "🎭 فئات الكلمات المتاحة:"
-    fun enabledOf(lang: AppLanguage, count: Int, total: Int) = if (lang == AppLanguage.ENGLISH) "$count enabled of $total" else "$count مفعلة من $total"
-    fun continueToReview(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Continue to Review ➡️" else "المواصلة لمراجعة التشكيلة ➡️"
+    fun teamSetupTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Setup Teams & Players" else "تهيئة الفرق واللاعبين"
+    fun targetScoreLabel(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Winning Target Score:" else "هدف الفوز المطلوب:"
+    fun addTeamButton(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Add Team ➕" else "إضافة فريق ➕"
+    fun addPlayerButton(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Add Player ➕" else "إضافة لاعب ➕"
+    fun editTeamName(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Edit Team Name" else "تعديل اسم الفريق"
+    fun enterPlayerName(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Player Name" else "اسم اللاعب"
+    fun saveButton(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Save" else "حفظ"
+    fun cancelButton(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Cancel" else "إلغاء"
+    fun minPlayersWarning(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Each team needs at least 1 player to play!" else "كل فريق يحتاج على الأقل لاعب واحد!"
+    fun startGameReviewButton(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Review & Start Match 🚀" else "مراجعة وتأكيد البداية 🚀"
 
     // --- Review Game Screen ---
-    fun reviewTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "📋 Review Setup & Rules" else "📋 مراجعة التشكيلة والقوانين"
-    fun reviewSubtitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Ready for laughs? Review your teams and game settings:" else "جاهزين للضحك؟ راجعوا التشكيلة وقوانين اللعبة:"
-    fun participatingTeams(lang: AppLanguage, count: Int) = if (lang == AppLanguage.ENGLISH) "👥 Participating Teams ($count teams):" else "👥 الفرق المشاركة ($count فرق):"
-    fun matchSettingsSummary(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "⚙️ Match Settings:" else "⚙️ إعدادات المباراة:"
-    fun selectedCategories(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "🎭 Selected Categories:" else "🎭 الفئات المختارة:"
-    fun startBattleBtn(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "🔥 Start the Game! 🇩🇿" else "🔥 ابدأ المعركة والتمثيل! 🇩🇿"
+    fun reviewMatchTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Review & Confirm Match" else "مراجعة وتأكيد المباراة"
+    fun startMatchConfirmed(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "🔥 Let's Go! Start Match" else "🔥 ابدأ الماتش الآن!"
 
     // --- Turn Intro Screen ---
     fun turnOf(lang: AppLanguage, teamName: String) = if (lang == AppLanguage.ENGLISH) "Turn: $teamName" else "دور $teamName"
@@ -88,9 +58,12 @@ object AppStrings {
 
     // --- Private Reveal Screen ---
     fun privateRevealTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "🔒 Secret First Word Reveal" else "🔒 كشف الكلمة الأولى للممثل"
+    fun secretRevealTitle(lang: AppLanguage) = privateRevealTitle(lang)
     fun privateRevealWarning(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Hand the phone to the actor only! Don't let other players see!" else "أعط الهاتف للممثل فقط ولا تدع الآخرين يشاهدون الكلمة!"
+    fun secretRevealInstructions(lang: AppLanguage) = privateRevealWarning(lang)
     fun tapToReveal(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Tap to reveal first word 👁️" else "اضغط لكشف الكلمة الأولى 👁️"
     fun readyStartFrenzy(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Ready? Start timer and show your skills! 🔥" else "جاهز؟ ابدأ العداد وورينا شطارتك! 🔥"
+    fun startActiveTurn(lang: AppLanguage) = startFrenzyBtn(lang)
 
     // --- Active Play Screen ---
     fun doublePointsBanner(lang: AppLanguage, pts: Int) = if (lang == AppLanguage.ENGLISH) "✨ Double Points (+$pts pts) ✨" else "✨ نقاط مضاعفة (+$pts دج) ✨"
@@ -99,33 +72,47 @@ object AppStrings {
     fun badPerformanceBtn(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Rule Break (-5 pts)" else "لم يمثل (-5 دج)"
     fun pauseTimer(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Pause Timer" else "إيقاف العداد"
     fun resumeTimer(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Resume Timer" else "استئناف العداد"
+    fun secondsUnit(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "s" else "ثانية"
     fun exitMatchConfirmTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Exit Match?" else "هل تريد الخروج من الماتش؟"
-    fun exitMatchConfirmBody(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Current match progress will be lost and you will return to Home." else "سيتم إلغاء الماتش الحالي والعودة للشاشة الرئيسية."
-    fun exitMatchYes(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Exit to Home" else "خروج للرئيسية"
-    fun exitMatchCancel(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Keep Playing" else "مواصلة اللعب"
+    fun exitMatchConfirmBody(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Match progress will be saved in your match history." else "سيتم حفظ مجريات الجولة الحالية في السجل وتعود للقائمة الرئيسية."
+    fun exitMatchYes(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Yes, Exit" else "نعم، خروج"
+    fun exitMatchCancel(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Cancel" else "إلغاء"
 
-    // --- Turn End Summary Screen ---
-    fun turnSummaryTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "🔔 Turn Time Expired!" else "🔔 خلاص وقت الدور!"
-    fun turnPointsGained(lang: AppLanguage, pts: Int) = if (lang == AppLanguage.ENGLISH) "+$pts pts in this turn 🔥" else "+$pts دج فهاد الدور 🔥"
-    fun turnPointsLost(lang: AppLanguage, pts: Int) = if (lang == AppLanguage.ENGLISH) "$pts pts 💀" else "$pts دج 💀"
-    fun currentStandings(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "📊 Current Team Standings:" else "📊 ترتيب الفرق الحالي:"
-    fun turnWordsList(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "📝 Words in this Turn:" else "📝 كلمات هذا الدور:"
-    fun nextTeamTurn(lang: AppLanguage, nextTeamName: String) = if (lang == AppLanguage.ENGLISH) "Next Turn: ($nextTeamName) ➡️" else "الدور التالي: ($nextTeamName) ➡️"
+    // --- Turn Summary Screen ---
+    fun turnSummaryTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "⏱️ Time's Up! Turn Summary" else "⏱️ خلص الوقت! ملخص الدور"
+    fun turnPointsGained(lang: AppLanguage, pts: Int) = if (lang == AppLanguage.ENGLISH) "+$pts pts gained" else "+$pts دج مكسب"
+    fun turnPointsLost(lang: AppLanguage, pts: Int) = if (lang == AppLanguage.ENGLISH) "$pts pts lost" else "$pts دج خسارة"
+    fun currentStandings(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "🏆 Current Standings:" else "🏆 الترتيب الحالي للفرق:"
+    fun turnWordsList(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Words Played this Turn:" else "الكلمات الملعوبة في هذا الدور:"
+    fun nextTeamTurn(lang: AppLanguage, teamName: String) = if (lang == AppLanguage.ENGLISH) "Next Turn: $teamName ➡️" else "الدور القادم: $teamName ➡️"
 
     // --- Victory Screen ---
-    fun victoryTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "🏆 Victory & Champions!" else "🏆 نهاية الماتش والفوز الكبير!"
-    fun winningTeamBanner(lang: AppLanguage, winnerName: String) = if (lang == AppLanguage.ENGLISH) "Champions: $winnerName" else "الفريق الفائز: $winnerName"
-    fun winningScoreBanner(lang: AppLanguage, score: Int) = if (lang == AppLanguage.ENGLISH) "Reached $score pts and won the match! 🇩🇿🔥" else "وصلوا لـ $score دج وربحوا القعدة 🇩🇿🔥"
-    fun finalStandings(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "🏅 Final Match Standings:" else "🏅 الترتيب النهائي للماتش:"
-    fun viewStatsBtn(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "📊 Match Stats & Awards" else "📊 تفاصيل وإحصائيات القعدة"
-    fun rematchBtn(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "🔥 Rematch / New Game!" else "🔥 ثأر وماتش جديد!"
-    fun returnHomeBtn(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Return to Home 🏠" else "العودة للقائمة الرئيسية 🏠"
+    fun victoryTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "🎊 Match Champions! 🎊" else "🎊 أبطال الماتش رسمياً! 🎊"
+    fun winningTeamBanner(lang: AppLanguage, name: String) = if (lang == AppLanguage.ENGLISH) "Winner: $name" else "الفائز: $name"
+    fun winningScoreBanner(lang: AppLanguage, score: Int) = if (lang == AppLanguage.ENGLISH) "Final Score: $score pts 🏆" else "الرصيد النهائي: $score دج 🏆"
+    fun finalStandings(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "🏆 Final Tournament Podium:" else "🏆 الترتيب النهائي للبطولة:"
+    fun viewStatsBtn(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Full Match Statistics 📊" else "إحصائيات الماتش الكاملة 📊"
+    fun rematchBtn(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Rematch / Play Again 🔄" else "ماتش جديد بنفس الفرق 🔄"
+    fun returnHomeBtn(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Return to Main Menu 🏠" else "العودة للقائمة الرئيسية 🏠"
+    fun currencyUnit(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "pts" else "دج"
+
+    // --- Settings & Categories Screen ---
+    fun settingsTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "⚙️ Game Settings & Categories" else "⚙️ إعدادات اللعبة والفئات"
+    fun timerDurationLabel(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Turn Duration:" else "مدة الدور:"
+    fun randomEventsToggle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Surprise Meme Events" else "الأحداث الميمية المفاجئة"
+    fun soundEffectsToggle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Sound Effects & Audio Feedback" else "المؤثرات الصوتية والنغمات"
+    fun algerianMusicStudio(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Algerian Music Studio (4 Genres)" else "استوديو الموسيقى الجزائرية (4 طبوع)"
+    fun activeCategoriesHeader(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Active Word Categories:" else "الفئات المفعلة في اللعبة:"
+    fun selectAllBtn(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Select All" else "تحديد الكل"
+    fun deselectAllBtn(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Deselect All" else "إلغاء التحديد"
+    fun saveSettingsBtn(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Save Settings" else "حفظ الإعدادات"
+    fun defaultSettingsBtn(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Restore Defaults" else "استعادة الافتراضي"
 
     // --- Statistics Screen ---
-    fun statsScreenTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "🏆 Gathering Statistics & Awards" else "🏆 إحصائيات القعدة والجوائز"
-    fun topActorAward(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "🎭 Best Actor Award (Most Correct Guesses)" else "🎭 أفضل ممثل (أكثر من جاب كلمات صح)"
-    fun skipChampAward(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "⏭️ Skip Champion (Most Skips)" else "⏭️ بطل التخطي (أكثر من دار سكايب)"
-    fun badActorAward(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "❌ Acting Penalty Award (Most Rule Breaks)" else "❌ أكثر ممثل تبهدل (أخطاء تمثيل)"
+    fun statsScreenTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "🏆 Hall of Fame & Stats" else "🏆 الإحصائيات وسجل المباريات"
+    fun topActorAward(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Golden Oscar Actor" else "أفضل ممثل أوسكار"
+    fun skipChampAward(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Skip Champion" else "بطل الهروب والتخطي"
+    fun badActorAward(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Rule Break Award" else "عقوبات كسر القواعد"
     fun matchSummaryHeader(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "📊 Overall Summary:" else "📊 ملخص أرقام الماتش:"
     fun totalPlayedWords(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Total Words:" else "مجموع الكلمات:"
     fun correctWords(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Correct Guesses:" else "تمثيل ناجح:"
@@ -147,6 +134,7 @@ object AppStrings {
     fun easyDiffLabel(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "🟢 Easy (+50 pts)" else "🟢 سهل (+50 دج)"
     fun hardDiffLabel(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "🔴 Hard (+100 pts)" else "🔴 صعيب (+100 دج)"
     fun saveWordBtn(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "Save Word" else "حفظ الكلمة"
+    fun cancelBtn(lang: AppLanguage) = cancelButton(lang)
 
     // --- About Screen ---
     fun aboutTitle(lang: AppLanguage) = if (lang == AppLanguage.ENGLISH) "ℹ️ About the Game & Rules" else "ℹ️ حول اللعبة والقواعد"
